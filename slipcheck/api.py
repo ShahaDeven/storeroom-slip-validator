@@ -134,6 +134,12 @@ def shift_log() -> dict:
     return ledger.summary(ref)
 
 
+@app.get("/api/data")
+def reference_data() -> dict:
+    """Parts with live on-hand, work orders with what was charged, and every stock change."""
+    return ledger.data_view(ref)
+
+
 @app.post("/api/ledger/reset")
 def clear_shift_log() -> dict:
     ledger.reset()

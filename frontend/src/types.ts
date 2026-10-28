@@ -101,3 +101,53 @@ export interface ShiftLog {
   caught: { code: string; severity: Severity; count: number }[]
   stock: { part_number: string; name: string; aisle: string; unit: string; start: number; posted: number; on_hand: number; low: boolean }[]
 }
+
+export interface Stamp {
+  posting_id: number
+  posted_at: string
+}
+
+export interface PartRow {
+  part_number: string
+  name: string
+  unit: string
+  unit_size: number
+  aisle: string
+  start: number
+  on_hand: number
+  posted: number
+  max_per_pull: number
+  low: boolean
+  last: (Stamp & { qty: number }) | null
+}
+
+export interface WorkOrderRow {
+  wo_number: string
+  status: 'OPEN' | 'CLOSED'
+  crew: string
+  members: string[]
+  location: string
+  opened: string
+  closed: string | null
+  postings: number
+  lines: number
+  last: Stamp | null
+}
+
+export interface StockChange extends Stamp {
+  part_number: string
+  name: string | null
+  unit: string | null
+  qty: number
+  before: number
+  after: number
+  wo_number: string | null
+  taken_by: string | null
+}
+
+export interface DataView {
+  parts: PartRow[]
+  work_orders: WorkOrderRow[]
+  changes: StockChange[]
+  latest_posting_id: number | null
+}

@@ -74,6 +74,17 @@
   }
 }
 
+/* Rows changed by the most recent posting: a short flash, then a faint green tint. */
+.row-fresh {
+  background: color-mix(in srgb, var(--color-stamp) 9%, transparent);
+  animation: fresh 2.2s ease-out;
+}
+@keyframes fresh {
+  from {
+    background: color-mix(in srgb, var(--color-stamp) 30%, transparent);
+  }
+}
+
 @keyframes stamp-down {
   from {
     transform: rotate(-8deg) scale(1.7);
@@ -86,6 +97,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .row-fresh {
+    animation: none;
+  }
   .stamp {
     animation: none;
     opacity: 0.88;

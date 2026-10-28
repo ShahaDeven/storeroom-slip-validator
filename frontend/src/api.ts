@@ -1,4 +1,4 @@
-import type { Meta, Posting, Report, Sample, SampleData, ShiftLog, Slip } from './types'
+import type { DataView, Meta, Posting, Report, Sample, SampleData, ShiftLog, Slip } from './types'
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -34,6 +34,7 @@ export const api = {
       body: JSON.stringify({ slip, name, answers }),
     }).then(json<Posting>),
   shiftLog: () => fetch('/api/ledger').then(json<ShiftLog>),
+  data: () => fetch('/api/data').then(json<DataView>),
   clearShiftLog: () => fetch('/api/ledger/reset', { method: 'POST' }).then(json<ShiftLog>),
   extract: (file: File, live: boolean) => {
     const form = new FormData()

@@ -194,6 +194,51 @@ def summary(ref: Reference) -> dict:
     }
 
 
+def data_view(ref: Reference) -> dict:
+    """The reference data as the mock inventory holds it now, plus every stock change.
+
+    Replays postings in order so each change carries its before and after on-hand.
+    """
+    with closing(_connect()) as conn:
+        postings = [_posting(r) for r in conn.execute("SELECT * FROM postings ORDER BY id")]
+
+    running = {pn: p.on_hand for pn, p in ref.parts.items()}
+    last_change: dict[str, dict] = {}
+    by_wo: dict[str, dict] = {}
+    changes = []
+    for post_ in postings:
+        stamp = {"posting_id": post_["id"], "posted_at": post_["posted_at"]}
+        for ln in post_["lines"]:
+            pn, qty = ln["part_number"], ln["qty"] or 0
+            if pn not in running:
+                continue
+            before = running[pn]
+            running[pn] = before - qty
+            changes.append(stamp | {"part_number": pn, "name": ln["name"], "unit": ln["unit"],
+                                    "qty": qty, "before": before, "after": running[pn],
+                                    "wo_number": post_["wo_number"], "taken_by": post_["taken_by"]})
+            last_change[pn] = stamp | {"qty": qty}
+        wo = by_wo.setdefault(post_["wo_number"], {"postings": 0, "lines": 0})
+        wo["postings"] += 1
+        wo["lines"] += len(post_["lines"])
+        wo["last"] = stamp
+
+    parts = [{"part_number": p.part_number, "name": p.name, "unit": p.unit, "unit_size": p.unit_size,
+              "aisle": p.aisle, "start": p.on_hand, "on_hand": running[p.part_number],
+              "posted": p.on_hand - running[p.part_number], "max_per_pull": p.max_per_pull,
+              "low": running[p.part_number] <= p.max_per_pull, "last": last_change.get(p.part_number)}
+             for p in ref.parts.values()]
+    work_orders = [{"wo_number": w.wo_number, "status": w.status, "crew": w.crew,
+                    "members": list(w.members), "location": w.location,
+                    "opened": w.opened.isoformat(), "closed": w.closed.isoformat() if w.closed else None,
+                    "postings": by_wo.get(w.wo_number, {}).get("postings", 0),
+                    "lines": by_wo.get(w.wo_number, {}).get("lines", 0),
+                    "last": by_wo.get(w.wo_number, {}).get("last")}
+                   for w in ref.work_orders.values()]
+    return {"parts": parts, "work_orders": work_orders, "changes": changes[::-1],
+            "latest_posting_id": postings[-1]["id"] if postings else None}
+
+
 def reset() -> None:
     with closing(_connect()) as conn, conn:
         conn.execute("DELETE FROM checks")

@@ -145,3 +145,19 @@ def test_clearing_the_shift_log_restores_stock(client):
     client.post("/api/post", json={"slip": sample(client, "01_clean.json"), "name": "01_clean.json"})
     log = client.post("/api/ledger/reset").json()
     assert log["counts"]["posted"] == 0 and log["stock"] == []
+
+
+def test_data_tab_shows_live_stock_and_each_change(client):
+    before = client.get("/api/data").json()
+    assert len(before["parts"]) == 60 and len(before["work_orders"]) == 30
+    assert before["changes"] == [] and before["latest_posting_id"] is None
+
+    client.post("/api/post", json={"slip": sample(client, "01_clean.json"), "name": "01_clean.json"})
+    after = client.get("/api/data").json()
+    elbow = next(p for p in after["parts"] if p["part_number"] == "PL-1001")
+    assert (elbow["start"], elbow["on_hand"], elbow["last"]["posting_id"]) == (120, 114, 1)
+    change = next(c for c in after["changes"] if c["part_number"] == "PL-1001")
+    assert (change["before"], change["after"], change["wo_number"]) == (120, 114, "WO-26-0412")
+    wo = next(w for w in after["work_orders"] if w["wo_number"] == "WO-26-0412")
+    assert (wo["postings"], wo["lines"]) == (1, 2)
+    assert after["latest_posting_id"] == 1

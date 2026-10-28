@@ -74,6 +74,13 @@ posting. The header tally keeps the main counts visible on the Counter tab. Post
 in a local SQLite file (`data/runtime/ledger.db`, git-ignored; override with
 `SLIPCHECK_DB`). Nothing leaves the machine. "Clear shift log" resets it.
 
+**Data tab.** The catalog and work orders the checker reads, as the mocked inventory holds
+them now: every part with start, posted and on-hand (low stock flagged), every work order
+with what was charged to it this shift, and a feed of stock changes (entry, W/O, who, and
+before → after per part). Rows changed by the latest posting are highlighted. The tab
+refreshes every few seconds, so a posting from another window shows up too. Filter by
+"moved this shift", "running low", open/closed, or search.
+
 Command line:
 
 ```bash

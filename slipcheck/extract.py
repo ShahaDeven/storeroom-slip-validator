@@ -14,8 +14,8 @@ downstream of this module is identical for typed and photographed slips.
 from __future__ import annotations
 
 import base64
+import io
 import json
-import mimetypes
 import os
 import re
 from datetime import date
@@ -75,6 +75,27 @@ def _parse_json(text: str) -> dict:
     return data
 
 
+MAX_SIDE = 1568  # larger images are downscaled by the API anyway; sending less is cheaper
+
+
+def prepare_image(photo: Path) -> str:
+    """Phone photo -> upright, size-capped JPEG, base64. Handles sideways (EXIF) shots and
+    multi-MB files, which would otherwise be misread or rejected by the API."""
+    from PIL import Image, ImageOps, UnidentifiedImageError
+
+    try:
+        with Image.open(photo) as img:
+            img = ImageOps.exif_transpose(img).convert("RGB")
+            img.thumbnail((MAX_SIDE, MAX_SIDE))
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+    except UnidentifiedImageError as e:
+        hint = (" iPhone HEIC photos are not supported: export as JPEG, or set Camera > Formats "
+                "to Most Compatible." if photo.suffix.lower() in {".heic", ".heif"} else "")
+        raise ExtractionError(f"Could not open '{photo.name}' as an image.{hint}") from e
+    return base64.standard_b64encode(buf.getvalue()).decode()
+
+
 def extract_live(photo: Path) -> dict:
     try:
         import anthropic
@@ -83,16 +104,13 @@ def extract_live(photo: Path) -> dict:
     if not os.environ.get("ANTHROPIC_API_KEY"):
         raise ExtractionError("Live mode needs ANTHROPIC_API_KEY set. Use mock mode to run without one.")
 
-    media_type = mimetypes.guess_type(photo.name)[0] or "image/jpeg"
-    if media_type not in {"image/jpeg", "image/png", "image/webp", "image/gif"}:
-        raise ExtractionError(f"'{photo.name}' is not a supported image type ({media_type}).")
-    image = base64.standard_b64encode(photo.read_bytes()).decode()
+    image = prepare_image(photo)
 
     msg = anthropic.Anthropic().messages.create(
         model=LIVE_MODEL,
         max_tokens=1500,
         messages=[{"role": "user", "content": [
-            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image}},
+            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image}},
             {"type": "text", "text": PROMPT},
         ]}],
     )

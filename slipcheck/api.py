@@ -151,7 +151,7 @@ async def extract_photo(file: UploadFile = File(...), live: bool = Form(False)) 
     """Read an uploaded photo. Mock mode matches the cache by file name."""
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in IMAGE_SUFFIXES:
-        raise HTTPException(422, f"'{file.filename}' is not an image (jpg, png, webp, gif).")
+        raise HTTPException(422, f"'{file.filename}' is not an image (jpg, png, webp, gif). iPhone HEIC photos: export as JPEG first.")
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / Path(file.filename).name
         path.write_bytes(await file.read())

@@ -1,0 +1,13 @@
+{
+  "wo_number": "WO-26-0460",
+  "date": "10/27/2026",
+  "taken_by": "Y. Kim",
+  "location": "Marsh Dining Hall",
+  "signature": true,
+  "items": [
+    {"part_number": "JN-5001", "part_name": "trash liners", "qty": 2, "unit": "box"},
+    {"part_number": "JN-5002", "part_name": "paper towel", "qty": 12, "unit": "roll"},
+    {"part_number": "JN-5003", "part_name": "toilet paper", "qty": 24, "unit": "roll"},
+    {"part_number": "JN-5010", "part_name": "mop head", "qty": 2, "unit": "ea"}
+  ]
+}

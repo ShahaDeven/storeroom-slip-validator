@@ -1,0 +1,18 @@
+{
+  "_provenance": {"kind": "hand-authored placeholder", "note": "Stand-in for model output until the photo is re-extracted with --live --save-extraction."},
+  "wo_number": {"value": "26-0390", "raw": "26-0390", "confidence": 0.91},
+  "date": {"value": "10/26/26", "raw": "10/26/26", "confidence": 0.9},
+  "taken_by": {"value": null, "raw": "A. Ok?f??", "confidence": 0.35},
+  "location": {"value": "Pierce Lib", "raw": "Pierce Lib", "confidence": 0.86},
+  "signature": {"value": true, "confidence": 0.92},
+  "items": [
+    {"part_number": {"value": null, "confidence": 1.0},
+     "part_name": {"value": "duplex outlet", "raw": "duplex outlet", "confidence": 0.84},
+     "qty": {"value": "4", "raw": "4", "confidence": 0.9},
+     "unit": {"value": null, "confidence": 1.0}},
+    {"part_number": {"value": "GN-4010", "raw": "GN-4010", "confidence": 0.82},
+     "part_name": {"value": "hinges", "raw": "hinges", "confidence": 0.86},
+     "qty": {"value": "2", "raw": "2", "confidence": 0.93},
+     "unit": {"value": null, "confidence": 1.0}}
+  ]
+}

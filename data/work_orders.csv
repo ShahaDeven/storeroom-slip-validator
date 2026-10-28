@@ -1,0 +1,31 @@
+wo_number,status,crew,members,location,opened,closed
+WO-26-0412,OPEN,Plumbing A,J. Rivera|M. Ortiz,Harlow Hall,2026-10-01,
+WO-26-0388,CLOSED,Plumbing A,J. Rivera|M. Ortiz,Harlow Hall,2026-09-08,2026-09-20
+WO-26-0430,OPEN,Plumbing B,K. Haas|D. Pryor,Norton Annex,2026-10-14,
+WO-26-0415,OPEN,Electrical,A. Okafor|L. Brandt,Pierce Library,2026-10-03,
+WO-26-0390,CLOSED,Electrical,A. Okafor|L. Brandt,Pierce Library,2026-09-10,2026-09-29
+WO-26-0420,OPEN,HVAC,S. Chen|R. Malik,Davis Science Center,2026-10-06,
+WO-26-0421,OPEN,HVAC,S. Chen|R. Malik,Bell Hall,2026-10-07,
+WO-26-0380,CLOSED,HVAC,S. Chen|R. Malik,Davis Science Center,2026-08-30,2026-09-15
+WO-26-0401,OPEN,Carpentry,T. Novak|E. Grant,Knox Hall,2026-10-02,
+WO-26-0399,CLOSED,Carpentry,T. Novak|E. Grant,Knox Hall,2026-09-12,2026-09-30
+WO-26-0431,OPEN,Plumbing B,K. Haas|D. Pryor,Marsh Dining Hall,2026-10-16,
+WO-26-0395,CLOSED,Plumbing B,K. Haas|D. Pryor,Norton Annex,2026-09-14,2026-10-02
+WO-26-0416,OPEN,Electrical,A. Okafor|L. Brandt,Fenwick Labs,2026-10-09,
+WO-26-0440,OPEN,Electrical B,H. Santos|F. Oduya,Wexler Gym,2026-10-12,
+WO-26-0441,OPEN,Electrical B,H. Santos|F. Oduya,Hale Administration,2026-10-19,
+WO-26-0386,CLOSED,Electrical B,H. Santos|F. Oduya,Wexler Gym,2026-09-02,2026-09-25
+WO-26-0422,OPEN,HVAC,S. Chen|R. Malik,Fenwick Labs,2026-10-13,
+WO-26-0402,OPEN,Carpentry,T. Novak|E. Grant,Alcott Residence,2026-10-08,
+WO-26-0450,OPEN,Paint,P. Lindqvist|C. Abara,Alcott Residence,2026-10-15,
+WO-26-0451,OPEN,Paint,P. Lindqvist|C. Abara,Hale Administration,2026-10-20,
+WO-26-0397,CLOSED,Paint,P. Lindqvist|C. Abara,Marsh Dining Hall,2026-09-05,2026-09-26
+WO-26-0460,OPEN,Custodial,N. Petrov|Y. Kim|G. Mensah,Marsh Dining Hall,2026-10-01,
+WO-26-0461,OPEN,Custodial,N. Petrov|Y. Kim|G. Mensah,Wexler Gym,2026-10-01,
+WO-26-0462,OPEN,Custodial,N. Petrov|Y. Kim|G. Mensah,Pierce Library,2026-10-01,
+WO-26-0470,OPEN,Locksmith,B. Ferris,Knox Hall,2026-10-21,
+WO-26-0471,OPEN,Locksmith,B. Ferris,Hale Administration,2026-10-22,
+WO-26-0398,CLOSED,Locksmith,B. Ferris,Bell Hall,2026-09-18,2026-10-05
+WO-26-0480,OPEN,Grounds,M. Duarte|S. Whitfield,Quarry Parking Ramp,2026-10-10,
+WO-26-0481,OPEN,Grounds,M. Duarte|S. Whitfield,Wexler Gym,2026-10-23,
+WO-26-0425,OPEN,HVAC,S. Chen|R. Malik,Hale Administration,2026-10-24,

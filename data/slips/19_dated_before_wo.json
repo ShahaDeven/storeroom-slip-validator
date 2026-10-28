@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0471",
+  "date": "10/12/2026",
+  "taken_by": "B. Ferris",
+  "location": "Hale Administration",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4012", "part_name": "lever lockset", "qty": 2, "unit": "ea"},
+    {"part_number": "GN-4011", "part_name": "door closer", "qty": 1, "unit": "ea"}
+  ]
+}

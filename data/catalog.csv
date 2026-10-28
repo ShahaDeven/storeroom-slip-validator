@@ -1,0 +1,61 @@
+part_number,name,aliases,unit,unit_size,aisle,on_hand,max_per_pull
+PL-1001,PVC Elbow 90 deg 3/4 in,3/4 elbow|3/4 pvc 90|pvc elbow 3/4,EA,1,A03,120,20
+PL-1002,PVC Elbow 90 deg 1/2 in,1/2 elbow|1/2 pvc 90|pvc elbow 1/2,EA,1,A03,85,20
+PL-1010,Ball Valve 3/4 in Brass,3/4 ball valve|brass valve 3/4,EA,1,A04,14,4
+PL-1020,Wax Ring Toilet Seal,wax ring|toilet wax seal,EA,1,A05,30,6
+PL-1021,Toilet Flapper 2 in Universal,flapper|toilet flapper,EA,1,A05,25,6
+EL-2001,Wire Nut Yellow (box of 100),yellow wire nut|wirenut yellow,BX,100,B02,12,3
+EL-2010,Duplex Receptacle 20A White,outlet 20a|receptacle 20a|duplex outlet 20a,EA,1,B03,48,10
+EL-2011,Duplex Receptacle 15A White,outlet 15a|receptacle 15a|duplex outlet 15a,EA,1,B03,60,10
+EL-2020,GFCI Receptacle 20A,gfci|gfi outlet|gfci outlet,EA,1,B03,16,4
+EL-2030,LED Tube T8 4 ft,t8 led|led tube|4ft tube,EA,1,B07,64,12
+EL-2040,Fluorescent Ballast 2-Lamp T8,ballast|t8 ballast,EA,1,B07,9,3
+HV-3001,Air Filter 20x20x2 MERV 8 (box of 12),20x20 filter|filter 20x20,BX,12,C01,18,4
+HV-3002,Air Filter 24x24x2 MERV 8 (box of 12),24x24 filter|filter 24x24,BX,12,C01,10,4
+HV-3010,V-Belt A42,a42 belt|belt a42,EA,1,C04,8,4
+HV-3011,V-Belt A44,a44 belt|belt a44,EA,1,C04,6,4
+GN-4001,Work Gloves Leather Large,gloves large|leather gloves l,PR,2,D01,40,6
+GN-4002,Work Gloves Leather Medium,gloves medium|leather gloves m,PR,2,D01,35,6
+GN-4010,Door Hinge 4.5 in Satin Nickel,hinge|door hinge|4.5 hinge,PR,2,D02,24,6
+GN-4020,Ceiling Tile 2x4 Fissured,ceiling tile|2x4 tile,EA,1,D04,40,12
+GN-4030,Duct Tape 2 in Silver,duct tape,RL,1,D03,30,6
+PL-1003,PVC Tee 3/4 in,3/4 tee|pvc tee 3/4,EA,1,A03,70,15
+PL-1004,PVC Coupling 1/2 in,1/2 coupling|pvc coupling 1/2,EA,1,A03,95,20
+PL-1011,Ball Valve 1/2 in Brass,1/2 ball valve|brass valve 1/2,EA,1,A04,18,4
+PL-1022,Toilet Fill Valve Universal,fill valve|ballcock,EA,1,A05,20,4
+PL-1030,Faucet Cartridge Single Handle,faucet cartridge|cartridge,EA,1,A06,15,3
+PL-1031,Faucet Supply Line 12 in Braided,supply line|braided supply line,EA,1,A06,40,8
+PL-1040,PTFE Thread Seal Tape 1/2 in,teflon tape|thread tape|ptfe tape,RL,1,A07,50,6
+PL-1050,P-Trap 1-1/2 in PVC,p-trap|p trap|sink trap,EA,1,A07,22,4
+PL-1060,Urinal Flush Valve Repair Kit,urinal kit|flush valve kit,EA,1,A08,10,2
+EL-2002,Wire Nut Red (box of 100),red wire nut|wirenut red,BX,100,B02,9,3
+EL-2050,Single Pole Switch 15A,light switch|single pole switch|toggle switch,EA,1,B04,55,10
+EL-2051,Three-Way Switch 15A,3-way switch|three way switch,EA,1,B04,30,6
+EL-2060,Cover Plate Duplex White,duplex plate|outlet cover|receptacle plate,EA,1,B05,120,20
+EL-2061,Cover Plate GFCI White,gfci plate|decora plate,EA,1,B05,80,20
+EL-2070,THHN Wire 12 AWG Black (500 ft roll),12 awg wire|thhn 12|black wire 12,RL,1,B06,6,2
+EL-2080,Circuit Breaker 20A Single Pole,breaker 20a|20 amp breaker,EA,1,B08,14,4
+EL-2090,LED Exit Sign Battery Backup,exit sign|led exit sign,EA,1,B09,7,2
+EL-2091,Emergency Light Twin Head,emergency light|bug eye light,EA,1,B09,5,2
+HV-3003,Air Filter 16x25x1 MERV 8 (box of 12),16x25 filter|filter 16x25,BX,12,C02,14,4
+HV-3012,V-Belt A46,a46 belt|belt a46,EA,1,C04,7,4
+HV-3020,Programmable Thermostat,thermostat|tstat,EA,1,C05,8,2
+HV-3030,Condensate Pump 115V,condensate pump|cond pump,EA,1,C05,4,1
+HV-3040,Run Capacitor 35/5 MFD,capacitor 35/5|run cap,EA,1,C06,12,3
+HV-3050,Contactor 30A 2-Pole,contactor|30a contactor,EA,1,C06,9,2
+GN-4003,Nitrile Gloves Large (box of 100),nitrile gloves|disposable gloves,BX,100,D01,25,3
+GN-4011,Door Closer Grade 1,door closer|closer,EA,1,D02,6,2
+GN-4012,Lever Lockset Passage,lever lockset|door lever|passage lever,EA,1,D02,10,3
+GN-4013,Cabinet Hinge Concealed (pair),cabinet hinge|euro hinge,PR,2,D02,30,6
+GN-4040,Drywall Screws 1-5/8 in (box of 1000),drywall screws|sheetrock screws,BX,1000,D05,15,2
+GN-4041,Drywall Sheet 4x8 1/2 in,drywall sheet|sheetrock 4x8,EA,1,D06,35,10
+GN-4050,Interior Paint Eggshell White (gallon),white paint|paint gallon,EA,1,D07,24,6
+GN-4060,Silicone Caulk Clear,caulk|silicone,EA,1,D07,48,8
+GN-4031,Masking Tape 1 in,masking tape|painters tape,RL,1,D03,36,6
+GN-4070,Safety Glasses Clear,safety glasses|goggles,EA,1,D08,60,10
+GN-4080,Foam Ear Plugs (pair),ear plugs|earplugs,PR,2,D08,200,20
+JN-5001,Trash Liner 40-45 gal (box of 250),trash bags|can liners|trash liners,BX,250,E01,20,4
+JN-5002,Paper Towel Roll Hardwound,paper towel|hand towel roll,RL,1,E02,144,24
+JN-5003,Toilet Tissue Jumbo Roll,toilet paper|jumbo roll|tp,RL,1,E02,180,24
+JN-5010,Wet Mop Head Large,mop head|mop,EA,1,E03,30,6
+JN-5020,Floor Finish (5 gal),floor finish|floor wax,EA,1,E04,8,2

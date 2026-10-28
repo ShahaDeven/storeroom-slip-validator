@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0412",
+  "date": "10/22/2026",
+  "taken_by": "J. Rivera",
+  "location": "Harlow Hall",
+  "signature": true,
+  "items": [
+    {"part_number": "PL-1001", "part_name": "3/4 PVC elbow", "qty": 6, "unit": "ea"},
+    {"part_number": "PL-1010", "part_name": "3/4 ball valve", "qty": 2, "unit": "ea"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0440",
+  "date": "10/27/2026",
+  "taken_by": "A. Okafor",
+  "location": "Wexler Gym",
+  "signature": true,
+  "items": [
+    {"part_number": "EL-2090", "part_name": "exit sign", "qty": 1, "unit": "ea"}
+  ]
+}

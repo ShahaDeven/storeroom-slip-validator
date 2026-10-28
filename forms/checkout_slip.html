@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storeroom Checkout Slip (synthetic)</title>
+<style>
+  @page { size: letter; margin: 0.5in; }
+  body { font-family: Arial, sans-serif; color: #000; background: #fff; }
+  .slip { border: 2px solid #000; padding: 14px 18px; margin-bottom: 0.4in; height: 4.4in; box-sizing: border-box; }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .04em; }
+  .sub { font-size: 10px; margin-bottom: 10px; }
+  .row { display: flex; gap: 14px; margin-bottom: 9px; font-size: 12px; }
+  .f { flex: 1; display: flex; align-items: flex-end; gap: 6px; }
+  .f span { white-space: nowrap; font-weight: bold; }
+  .f i { flex: 1; border-bottom: 1px solid #000; height: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 6px 0 12px; }
+  th, td { border: 1px solid #000; height: 24px; padding: 0 6px; text-align: left; }
+  th { background: #eee; }
+</style>
+</head>
+<body>
+<!-- Two slips per page. Print, fill in by hand, photograph, save to data/photos/. -->
+<script>
+  const slip = `
+  <div class="slip">
+    <h1>STOREROOM PARTS CHECKOUT SLIP</h1>
+    <div class="sub">SYNTHETIC FORM FOR PROTOTYPE DEMO. Not an official document.</div>
+    <div class="row"><div class="f"><span>W/O #</span><i></i></div><div class="f"><span>Date</span><i></i></div></div>
+    <div class="row"><div class="f"><span>Taken by</span><i></i></div><div class="f"><span>Location</span><i></i></div></div>
+    <table>
+      <tr><th style="width:22%">Part #</th><th>Description</th><th style="width:10%">Qty</th><th style="width:10%">Unit</th></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+    </table>
+    <div class="row"><div class="f"><span>Signature</span><i></i></div><div class="f"><span>Issued by (storeroom)</span><i></i></div></div>
+  </div>`;
+  document.write(slip + slip);
+</script>
+</body>
+</html>

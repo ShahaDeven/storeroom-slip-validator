@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0480",
+  "date": "10/27/2026",
+  "taken_by": "M. Duarte",
+  "location": "Quarry Parking Ramp",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4080", "part_name": "ear plugs", "qty": 10, "unit": "pcs"},
+    {"part_number": "GN-4070", "part_name": "safety glasses", "qty": 2, "unit": "ea"}
+  ]
+}

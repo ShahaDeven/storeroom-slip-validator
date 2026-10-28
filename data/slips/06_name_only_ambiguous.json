@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0421",
+  "date": "10/24/2026",
+  "taken_by": "S. Chen",
+  "location": "Bell Hall",
+  "signature": true,
+  "items": [
+    {"part_number": null, "part_name": "air filter MERV 8", "qty": 1, "unit": "box"}
+  ]
+}

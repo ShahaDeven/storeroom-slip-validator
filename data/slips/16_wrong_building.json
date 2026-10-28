@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0450",
+  "date": "10/27/2026",
+  "taken_by": "C. Abara",
+  "location": "Knox Hall",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4050", "part_name": "white paint", "qty": 3, "unit": "ea"},
+    {"part_number": "GN-4031", "part_name": "masking tape", "qty": 4, "unit": "roll"}
+  ]
+}

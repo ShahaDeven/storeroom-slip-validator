@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0441",
+  "date": "10/27/2026",
+  "taken_by": "F. Oduya",
+  "location": "Hale Administration",
+  "signature": true,
+  "items": [
+    {"part_number": "EL-2080", "part_name": "exit sign", "qty": 1, "unit": "ea"}
+  ]
+}

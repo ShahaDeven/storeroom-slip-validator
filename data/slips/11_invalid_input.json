@@ -1,0 +1,11 @@
+{
+  "wo_number": "",
+  "date": "last tuesday",
+  "taken_by": "",
+  "location": "",
+  "signature": null,
+  "items": [
+    {"part_number": "XX-9999", "part_name": "", "qty": "a few", "unit": null},
+    "some pipe stuff"
+  ]
+}

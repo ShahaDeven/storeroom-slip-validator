@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0420",
+  "date": "10/26/2026",
+  "taken_by": "S. Chen",
+  "location": "Davis Science Center",
+  "signature": true,
+  "items": [
+    {"part_number": "HV-3011", "part_name": "A44 belt", "qty": 8, "unit": "ea"}
+  ]
+}

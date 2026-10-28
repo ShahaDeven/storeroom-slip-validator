@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0401",
+  "date": "10/23/2026",
+  "taken_by": "T. Novak",
+  "location": "Knox Hall",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4010", "part_name": "door hinge", "qty": 2, "unit": null}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "_note": "Hard case: closed W/O, name-only part that fits two catalog items, '2' of a pair-tracked part with no unit, and an illegible name the extractor could not read confidently.",
+  "wo_number": {"value": "WO-26-0390", "raw": "26-0390", "confidence": 0.93},
+  "date": {"value": "10/26/26", "raw": "10/26/26", "confidence": 0.9},
+  "taken_by": {"value": "A. Okafor", "raw": "A. Okaf?r", "confidence": 0.62},
+  "location": {"value": "Pierce Library", "raw": "Pierce Lib", "confidence": 0.88},
+  "signature": {"value": true, "confidence": 0.95},
+  "items": [
+    {"part_number": {"value": null, "confidence": 1.0},
+     "part_name": {"value": "duplex outlet", "raw": "duplex outlet", "confidence": 0.85},
+     "qty": {"value": "4", "raw": "4", "confidence": 0.9},
+     "unit": {"value": null, "confidence": 1.0}},
+    {"part_number": {"value": "GN-4010", "raw": "GN-4010", "confidence": 0.8},
+     "part_name": {"value": "hinges", "raw": "hinges", "confidence": 0.86},
+     "qty": {"value": "2", "raw": "2", "confidence": 0.92},
+     "unit": {"value": null, "confidence": 1.0}}
+  ]
+}

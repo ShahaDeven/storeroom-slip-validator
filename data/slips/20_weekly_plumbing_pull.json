@@ -1,0 +1,15 @@
+{
+  "_note": "A realistic multi-line pull: name-only lines that resolve, one that doesn't, and gloves written in pieces that don't make whole pairs.",
+  "wo_number": "WO-26-0431",
+  "date": "10/27/2026",
+  "taken_by": "D. Pryor",
+  "location": "Marsh Dining Hall",
+  "signature": true,
+  "items": [
+    {"part_number": "PL-1031", "part_name": "supply line", "qty": 4, "unit": "ea"},
+    {"part_number": null, "part_name": "teflon tape", "qty": 2, "unit": null},
+    {"part_number": null, "part_name": "p-trap", "qty": 1, "unit": null},
+    {"part_number": null, "part_name": "ball valve", "qty": 2, "unit": null},
+    {"part_number": "GN-4001", "part_name": "gloves large", "qty": 3, "unit": "pcs"}
+  ]
+}

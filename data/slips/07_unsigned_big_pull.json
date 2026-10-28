@@ -1,0 +1,10 @@
+{
+  "wo_number": "WO-26-0415",
+  "date": "10/25/2026",
+  "taken_by": "L. Brandt",
+  "location": "Pierce Library",
+  "signature": false,
+  "items": [
+    {"part_number": "EL-2030", "part_name": "LED tube T8", "qty": 30, "unit": "ea"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0430",
+  "date": "10/24/2026",
+  "taken_by": "K. Haas",
+  "location": "Norton Annex",
+  "signature": true,
+  "items": [
+    {"part_number": null, "part_name": "wax ring", "qty": 1, "unit": null},
+    {"part_number": null, "part_name": "flapper", "qty": 1, "unit": null}
+  ]
+}

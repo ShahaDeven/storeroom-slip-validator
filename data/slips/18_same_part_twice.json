@@ -1,0 +1,12 @@
+{
+  "wo_number": "WO-26-0402",
+  "date": "10/27/2026",
+  "taken_by": "E. Grant",
+  "location": "Alcott Residence",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4041", "part_name": "drywall sheet", "qty": 4, "unit": "ea"},
+    {"part_number": "GN-4040", "part_name": "drywall screws", "qty": 1, "unit": "box"},
+    {"part_number": "GN-4041", "part_name": "drywall 4x8", "qty": 2, "unit": "ea"}
+  ]
+}

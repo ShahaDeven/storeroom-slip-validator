@@ -1,0 +1,11 @@
+{
+  "wo_number": "WO-26-0420",
+  "date": "10/24/2026",
+  "taken_by": "R. Malik",
+  "location": "Davis Science Center",
+  "signature": true,
+  "items": [
+    {"part_number": "GN-4001", "part_name": "gloves large", "qty": 4, "unit": "pcs"},
+    {"part_number": "HV-3010", "part_name": "A42 belt", "qty": 2, "unit": "ea"}
+  ]
+}

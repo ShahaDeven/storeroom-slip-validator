@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* Storeroom counter: galvanized-steel shelving around a canary carbon-copy slip.
+   Ballpoint blue is what the crew wrote, red pen is what blocks posting,
+   green is the clerk's corrections and the "ready" stamp. */
+@theme {
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-cond: "Barlow Semi Condensed", "Barlow", ui-sans-serif, sans-serif;
+  --font-hand: "Kalam", "Segoe Print", cursive;
+
+  --color-steel: #d3d8db;
+  --color-steel-2: #e4e8ea;
+  --color-steel-3: #f3f5f6;
+  --color-rail: #8f9aa1;
+  --color-graphite: #1e2528;
+  --color-graphite-2: #4a555b;
+
+  --color-canary: #f4e5a0;
+  --color-canary-deep: #e6d27f;
+  --color-form-ink: #7b4b2a;
+  --color-ballpoint: #22388a;
+  --color-redpen: #c01f1f;
+  --color-amber: #8f5a00;
+  --color-stamp: #2b7449;
+}
+
+@layer base {
+  html {
+    background: var(--color-steel);
+    color: var(--color-graphite);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ballpoint);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Carbon-copy paper: flat canary with a perforated tear-off edge at the top. */
+  .paper {
+    background-color: var(--color-canary);
+    background-image:
+      radial-gradient(circle at 6px -1px, var(--color-steel) 3px, transparent 3.5px);
+    background-size: 14px 8px;
+    background-repeat: repeat-x;
+    box-shadow:
+      0 1px 0 var(--color-canary-deep),
+      0 18px 30px -18px rgb(30 37 40 / 0.45);
+  }
+
+  .blank {
+    border-bottom: 1px solid var(--color-form-ink);
+  }
+
+  .wavy-block {
+    text-decoration: underline wavy var(--color-redpen);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 5px;
+  }
+  .wavy-warn {
+    text-decoration: underline wavy var(--color-amber);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+
+  .stamp {
+    border: 4px double currentColor;
+    mix-blend-mode: multiply;
+    transform: rotate(-8deg);
+    animation: stamp-down 260ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  }
+}
+
+@keyframes stamp-down {
+  from {
+    transform: rotate(-8deg) scale(1.7);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-8deg) scale(1);
+    opacity: 0.88;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    animation: none;
+    opacity: 0.88;
+  }
+}

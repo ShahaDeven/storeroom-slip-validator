@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from './api'
 import { Counter } from './components/Counter'
 import { DataView } from './components/DataView'
+import { ImpactView } from './components/ImpactView'
 import { Inbox, titleOf } from './components/Inbox'
 import { ShiftLog } from './components/ShiftLog'
 import { SlipPaper } from './components/SlipPaper'
@@ -14,7 +15,7 @@ interface Loaded {
   photo: string | null
 }
 
-type View = 'counter' | 'log' | 'data'
+type View = 'counter' | 'log' | 'data' | 'impact'
 
 export default function App() {
   const [view, setView] = useState<View>('counter')
@@ -213,6 +214,7 @@ export default function App() {
               ['counter', 'Counter'],
               ['log', 'Shift log'],
               ['data', 'Data'],
+              ['impact', 'Impact (estimated)'],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -261,7 +263,11 @@ export default function App() {
         )}
       </div>
 
-      {view === 'data' ? (
+      {view === 'impact' ? (
+        <div className="mt-6">
+          <ImpactView />
+        </div>
+      ) : view === 'data' ? (
         <div className="mt-6">
           <DataView />
         </div>

@@ -1,4 +1,4 @@
-import type { DataView, Meta, Posting, Report, Sample, SampleData, ShiftLog, Slip } from './types'
+import type { DataView, Impact, Meta, Posting, Report, Sample, SampleData, ShiftLog, Slip } from './types'
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -8,6 +8,10 @@ async function json<T>(res: Response): Promise<T> {
       if (typeof body.detail === 'string') message = body.detail
     } catch {
       // keep the status text
+    }
+    // The page is newer than the running server (Python loads code once, at start).
+    if (res.status === 405 || (res.status === 404 && message.startsWith('No API route'))) {
+      message = 'The server is running older code than this page. Restart it (python -m slipcheck serve) and reload.'
     }
     throw new Error(message)
   }
@@ -35,6 +39,12 @@ export const api = {
     }).then(json<Posting>),
   shiftLog: () => fetch('/api/ledger').then(json<ShiftLog>),
   data: () => fetch('/api/data').then(json<DataView>),
+  impact: (likely: Record<string, number>) =>
+    fetch('/api/impact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ likely }),
+    }).then(json<Impact>),
   clearShiftLog: () => fetch('/api/ledger/reset', { method: 'POST' }).then(json<ShiftLog>),
   extract: (file: File, live: boolean) => {
     const form = new FormData()

@@ -151,3 +151,35 @@ export interface DataView {
   changes: StockChange[]
   latest_posting_id: number | null
 }
+
+export interface Range {
+  low: number
+  likely: number
+  high: number
+  source: 'observed' | 'assumed' | 'unknown'
+  basis: string
+}
+
+export interface ImpactScenario {
+  detection_weighted: number
+  mismatches_per_week: { manual: number; checked: number }
+  hours_per_week: { manual: number; checked: number; saved: number }
+  hours_per_year_saved: number
+  dollars_per_year_saved: number
+  flags_per_week: number
+  audit_variances_per_year: { manual: number; checked: number }
+  corrections_logged_per_year: number
+  break_even_slip_share: number | null
+}
+
+export interface Impact {
+  detection: Record<string, { label: string; n: number; flagged: number; auto_ok: number; auto_wrong: number; missed: number; caught: number }>
+  false_alarm_rate: number
+  scenarios: { pessimistic: ImpactScenario; likely: ImpactScenario; optimistic: ImpactScenario }
+  likely_inputs: Record<string, number>
+  assumptions: Record<string, unknown> & {
+    excluded: Record<string, { source: string; basis: string }>
+    error_mix: { source: string; basis: string; shares: Record<string, number> }
+  }
+  settings: { n_per_type: number; seed: number }
+}

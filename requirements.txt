@@ -3,6 +3,7 @@ fastapi>=0.115           # API behind the web UI
 uvicorn>=0.30            # serves the API + built frontend
 python-multipart>=0.0.9  # photo uploads
 anthropic>=0.40          # live photo extraction only (optional; mock mode needs no key)
+pillow>=10.0            # live mode: straightens and shrinks phone photos before sending
 python-dotenv>=1.0       # optional: read ANTHROPIC_API_KEY from .env
 pytest>=8.0              # tests
 httpx>=0.27              # API tests (FastAPI TestClient)

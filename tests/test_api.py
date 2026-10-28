@@ -81,7 +81,7 @@ def test_upload_rejects_non_image(client):
 
 def test_upload_uses_mock_cache_by_file_name(client):
     r = client.post("/api/extract", files={"file": ("slip_hard_case.png", b"x", "image/png")})
-    assert r.json()["slip"]["_provenance"]["kind"] == "hand-authored placeholder"
+    assert r.json()["slip"]["_provenance"]["kind"] == "live model output"
 
 
 # ------------------------------------------------------------ shift log (mock inventory)
@@ -161,3 +161,27 @@ def test_data_tab_shows_live_stock_and_each_change(client):
     wo = next(w for w in after["work_orders"] if w["wo_number"] == "WO-26-0412")
     assert (wo["postings"], wo["lines"]) == (1, 2)
     assert after["latest_posting_id"] == 1
+
+
+def test_accounting_export_has_root_cause_per_posted_line(client):
+    slip = sample(client, "02_closed_wo.json")
+    client.post("/api/validate", json={"slip": slip, "name": "02_closed_wo.json"})  # records the problem found
+    slip["wo_number"] = "WO-26-0412"
+    client.post("/api/post", json={"slip": slip, "name": "02_closed_wo.json",
+                                   "answers": ["W/O number: WO-26-0412, Harlow Hall"]})
+    r = client.get("/api/ledger/export.csv")
+    assert r.headers["content-type"].startswith("text/csv")
+    header, row = r.text.strip().splitlines()[:2]
+    assert header.startswith("entry,posted_at,slip,wo_number")
+    assert "CLOSED_WO" in row and "WO-26-0412, Harlow Hall" in row and ",2,EA," in row
+
+
+def test_impact_endpoint_recomputes_with_slider_values(client):
+    base = client.get("/api/impact").json()["scenarios"]["likely"]
+    low = client.post("/api/impact", json={"likely": {"slip_caused_share": 0.02}}).json()
+    assert low["likely_inputs"]["slip_caused_share"] == 0.02
+    assert low["scenarios"]["likely"]["hours_per_year_saved"] < base["hours_per_year_saved"]
+    # pessimistic/optimistic stay on the file's ranges regardless of the sliders
+    assert low["scenarios"]["pessimistic"] == client.get("/api/impact").json()["scenarios"]["pessimistic"]
+    junk = client.post("/api/impact", json={"likely": {"slip_caused_share": 9, "nope": 1}}).json()
+    assert junk["likely_inputs"]["slip_caused_share"] == 1.0 and "nope" not in junk["likely_inputs"]

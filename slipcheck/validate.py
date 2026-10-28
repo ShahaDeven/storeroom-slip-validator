@@ -227,7 +227,7 @@ def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue
         alts = _open_alternatives(ref, taken_by, location or wo.location, wo.crew)
         issues.append(Issue(
             BLOCK, "CLOSED_WO", "wo_number",
-            f"{wo.wo_number} was closed on {wo.closed}. Parts cannot be charged to it.",
+            f"{wo.wo_number} was closed on {wo.closed}. Parts can't be recorded against it.",
             CREW, [f"Move to {_wo_label(w)}" for w in alts], [_wo_fix(w) for w in alts]))
     if location and not _same_place(location, wo.location):
         issues.append(Issue(WARN, "LOCATION_MISMATCH", "location",

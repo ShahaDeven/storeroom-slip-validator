@@ -7,17 +7,21 @@ Serves the built frontend (frontend/dist) at / when it exists.
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import tempfile
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from slipcheck import impact as impact_model
 from slipcheck import ledger
 from slipcheck.extract import LIVE_MODEL, ExtractionError, extract
 from slipcheck.reference import DATA_DIR, load_reference
@@ -134,9 +138,48 @@ def shift_log() -> dict:
     return ledger.summary(ref)
 
 
+@app.get("/api/ledger/export.csv")
+def export_for_accounting() -> Response:
+    """Every posted line with the problems found at entry and how they were corrected."""
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=ledger.EXPORT_COLUMNS)
+    writer.writeheader()
+    writer.writerows(ledger.export_rows())
+    name = f"storeroom-postings-{date.today().isoformat()}.csv"
+    return Response(buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+class ImpactRequest(BaseModel):
+    likely: dict[str, Any] = {}
+
+
+_detection_cache: tuple | None = None
+
+
+def _detection() -> tuple:
+    """Detection runs the real validator over 2,100 synthetic slips (~1 s); do it once."""
+    global _detection_cache
+    if _detection_cache is None:
+        _detection_cache = impact_model.measure_detection(ref)
+    return _detection_cache
+
+
+@app.get("/api/impact")
+def impact_defaults() -> dict:
+    """ESTIMATED manual-vs-checked comparison with the file's assumptions."""
+    return impact_model.impact(ref, detection=_detection())
+
+
+@app.post("/api/impact")
+def impact_with(req: ImpactRequest) -> dict:
+    """Same, with the 'likely' inputs replaced by the UI's slider values."""
+    return impact_model.impact(ref, overrides=req.likely, detection=_detection())
+
+
 @app.get("/api/data")
 def reference_data() -> dict:
-    """Parts with live on-hand, work orders with what was charged, and every stock change."""
+    """Parts with live on-hand, work orders with what was issued against them, and every stock change."""
     return ledger.data_view(ref)
 
 

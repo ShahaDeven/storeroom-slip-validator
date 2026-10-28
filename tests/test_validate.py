@@ -223,7 +223,7 @@ def test_mock_extraction_replays_cache(tmp_path, ref):
     photo = tmp_path / "slip_hard_case.png"
     photo.write_bytes(b"not really an image")
     data = extract(photo)
-    assert data["_provenance"]["kind"] == "hand-authored placeholder"
+    assert data["_provenance"]["kind"] == "live model output"  # real Haiku reading, replayed
     assert validate(data, ref, TODAY).status == "BLOCKED"
 
 

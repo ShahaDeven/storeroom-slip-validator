@@ -4,3 +4,5 @@ __pycache__/
 .venv/
 .env
 data/runtime/
+
+/docs/Slip_Check_Case_Study.docx

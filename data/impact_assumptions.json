@@ -1,0 +1,64 @@
+{
+  "_note": "Inputs to the impact model (python -m slipcheck impact). Every value says where it comes from: observed = seen firsthand in the UB storeroom; assumed = a reasoned guess, shown as a low/likely/high range; unknown = deliberately left out of the math. Edit the numbers and re-run.",
+
+  "slips_per_week": {
+    "low": 50, "likely": 85, "high": 150, "source": "observed",
+    "basis": "10-20 slips on a normal day, 40-50 on a very busy day, 5-day week"
+  },
+  "mismatches_per_week": {
+    "low": 7, "likely": 7.5, "high": 8, "source": "observed",
+    "basis": "Mismatches surfaced at the storeroom's counts 7-8 times a week"
+  },
+  "minutes_per_mismatch": {
+    "low": 30, "likely": 45, "high": 60, "source": "observed",
+    "basis": "Chasing one took 30-60 min: crew busy, call back later, the item gets put on hold"
+  },
+  "slip_caused_share": {
+    "low": 0.2, "likely": 0.5, "high": 0.8, "source": "assumed",
+    "basis": "Share of count mismatches caused by an error written on a slip, versus parts taken with no slip, receiving errors or loss. The key unknown: a pilot measures it, and if it is near zero the checker cannot help."
+  },
+  "error_mix": {
+    "source": "assumed",
+    "basis": "The error types were observed at the counter; how often each occurs is assumed. Two types the checker cannot see are included on purpose.",
+    "shares": {
+      "closed_wo": 0.20,
+      "pairs_no_unit": 0.20,
+      "name_only": 0.15,
+      "illegible": 0.10,
+      "missing_signature": 0.05,
+      "plausible_wrong_qty": 0.20,
+      "wrong_part_number": 0.10
+    }
+  },
+  "minutes_per_flag": {
+    "low": 2, "likely": 3, "high": 5, "source": "assumed",
+    "basis": "Answering a flag at the counter while the crew is still there or a phone call away"
+  },
+  "seconds_added_per_slip": {
+    "low": 0, "likely": 10, "high": 20, "source": "assumed",
+    "basis": "Reading the check result on every slip, including clean ones"
+  },
+  "unresolved_share": {
+    "low": 0.10, "likely": 0.25, "high": 0.40, "source": "assumed",
+    "basis": "Share of count mismatches never traced, left for the yearly audit to adjust"
+  },
+  "clerk_hourly_cost": {
+    "low": 22, "likely": 28, "high": 35, "source": "assumed",
+    "basis": "Loaded hourly cost of storeroom staff time in USD; replace with the real figure"
+  },
+  "weeks_per_year": {
+    "low": 50, "likely": 50, "high": 50, "source": "assumed",
+    "basis": "Working weeks"
+  },
+
+  "excluded": {
+    "cost_allocation": {
+      "source": "unknown",
+      "basis": "Whether parts were charged to the crew or to the unit was decided by the manager and accounting. It changes who bears the cost, not how much, so it is left out."
+    },
+    "receiving_callbacks": {
+      "source": "observed",
+      "basis": "The auditing team checked scanned receiving documents within 1-2 days and called the storeroom about issues. Those are about what came in from vendors, which the slip checker does not touch, so they are not counted as savings."
+    }
+  }
+}

@@ -6,7 +6,7 @@ No real storeroom slips or work orders are used.
 
 The file name matters: mock mode looks up `data/extractions/<photo name without extension>.json`.
 
-## slip_clean.jpg (representative case)
+## slip_clean.jpeg (representative case)
 
 | Field | Write |
 |---|---|
@@ -20,7 +20,7 @@ The file name matters: mock mode looks up `data/extractions/<photo name without 
 
 Expected: `READY`.
 
-## slip_hard_case.jpg (difficult input)
+## slip_hard_case.jpeg (difficult input)
 
 | Field | Write |
 |---|---|
@@ -37,12 +37,13 @@ UNIT_AMBIGUOUS (2 PR or 1 PR), and HUMAN_REVIEW on whatever the model could not 
 
 ## Refreshing the cached extractions
 
-The JSON files in `data/extractions/` start as **hand-authored placeholders** (their
-`_provenance.kind` says so). After taking the photos, replace them with real model output:
+The JSON files in `data/extractions/` are **real Claude Haiku readings** of the two photos
+here, saved on 2026-10-28 (`_provenance.kind` is `live model output`). To read the photos
+again, or after replacing them:
 
 ```
-python -m slipcheck check data/photos/slip_clean.jpg --live --save-extraction
-python -m slipcheck check data/photos/slip_hard_case.jpg --live --save-extraction
+python -m slipcheck check data/photos/slip_clean.jpeg --live --save-extraction
+python -m slipcheck check data/photos/slip_hard_case.jpeg --live --save-extraction
 ```
 
 Two Haiku calls, well under a cent total. From then on, mock mode replays real output.

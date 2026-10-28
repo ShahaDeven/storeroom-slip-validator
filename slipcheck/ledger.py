@@ -239,6 +239,34 @@ def data_view(ref: Reference) -> dict:
             "latest_posting_id": postings[-1]["id"] if postings else None}
 
 
+EXPORT_COLUMNS = ["entry", "posted_at", "slip", "wo_number", "location", "crew", "taken_by",
+                  "slip_date", "part_number", "description", "aisle", "qty", "unit",
+                  "problems_found_at_entry", "corrected_at_counter"]
+
+
+def export_rows() -> list[dict]:
+    """One row per posted line: what was issued, plus WHY it needed correcting, if it did.
+
+    The audit's main question about a variance is why it happened; for every slip that
+    passed through the checker, the answer is already on the row.
+    """
+    with closing(_connect()) as conn:
+        first = {r["name"]: json.loads(r["first_codes"]) for r in conn.execute("SELECT name, first_codes FROM checks")}
+        postings = [_posting(r) for r in conn.execute("SELECT * FROM postings ORDER BY id")]
+    rows = []
+    for p in postings:
+        causes = "; ".join(code for _, code in first.get(p["name"], [])) or "none"
+        for ln in p["lines"]:
+            rows.append({"entry": p["id"], "posted_at": p["posted_at"], "slip": p["name"],
+                         "wo_number": p["wo_number"], "location": p["location"], "crew": p["crew"],
+                         "taken_by": p["taken_by"], "slip_date": p["slip_date"],
+                         "part_number": ln["part_number"], "description": ln["name"], "aisle": ln["aisle"],
+                         "qty": int(ln["qty"]) if ln["qty"] == int(ln["qty"] or 0) else ln["qty"],
+                         "unit": ln["unit"], "problems_found_at_entry": causes,
+                         "corrected_at_counter": "; ".join(p["answers"]) or "none"})
+    return rows
+
+
 def reset() -> None:
     with closing(_connect()) as conn, conn:
         conn.execute("DELETE FROM checks")

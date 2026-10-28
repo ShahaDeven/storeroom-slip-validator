@@ -3,7 +3,7 @@ import { titleOf } from './Inbox'
 
 /** Plain-language names for what was caught, for a supervisor reading the log. */
 const CAUGHT_LABEL: Record<string, string> = {
-  CLOSED_WO: 'Charged to a closed work order',
+  CLOSED_WO: 'Recorded against a closed work order',
   UNKNOWN_WO: 'Work order not in the system',
   MISSING_WO: 'No work order written',
   HUMAN_REVIEW: 'Handwriting too unclear to trust',
@@ -65,15 +65,27 @@ export function ShiftLog({ log, canOpen, onOpen, onClear }: Props) {
           Postings go to a mocked inventory stored on this computer only. Clearing the log puts stock back where it
           started.
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            if (window.confirm('Clear every check and posting from this shift? Stock goes back to the starting counts.')) onClear()
-          }}
-          className="cursor-pointer text-sm text-redpen underline"
-        >
-          Clear shift log
-        </button>
+        <div className="flex flex-wrap items-baseline gap-4">
+          {postings.length > 0 && (
+            <a
+              href="/api/ledger/export.csv"
+              download
+              title="One row per posted part, with the problems found at entry and how each was corrected"
+              className="rounded-md bg-graphite px-3 py-1.5 text-sm font-semibold text-steel-3 hover:bg-graphite-2"
+            >
+              Download for accounting (CSV)
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Clear every check and posting from this shift? Stock goes back to the starting counts.')) onClear()
+            }}
+            className="cursor-pointer text-sm text-redpen underline"
+          >
+            Clear shift log
+          </button>
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 overflow-hidden rounded-md border border-rail/70 bg-steel-3 sm:grid-cols-3 lg:grid-cols-6">

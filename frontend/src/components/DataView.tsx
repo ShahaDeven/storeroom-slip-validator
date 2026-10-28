@@ -4,7 +4,7 @@ import type { DataView as Data, StockChange } from '../types'
 
 type Table = 'parts' | 'work_orders'
 type PartFilter = 'all' | 'changed' | 'low'
-type WoFilter = 'all' | 'OPEN' | 'CLOSED' | 'charged'
+type WoFilter = 'all' | 'OPEN' | 'CLOSED' | 'issued'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 const POLL_MS = 4000
@@ -54,7 +54,7 @@ export function DataView() {
     () =>
       (data?.work_orders ?? []).filter(
         (w) =>
-          (woFilter === 'all' || (woFilter === 'charged' ? w.postings > 0 : w.status === woFilter)) &&
+          (woFilter === 'all' || (woFilter === 'issued' ? w.postings > 0 : w.status === woFilter)) &&
           (!q || `${w.wo_number} ${w.crew} ${w.location} ${w.members.join(' ')}`.toLowerCase().includes(q)),
       ),
     [data, woFilter, q],
@@ -67,7 +67,7 @@ export function DataView() {
   const latest = data.latest_posting_id
   const changedCount = data.parts.filter((p) => p.posted > 0).length
   const lowCount = data.parts.filter((p) => p.low).length
-  const chargedCount = data.work_orders.filter((w) => w.postings > 0).length
+  const issuedCount = data.work_orders.filter((w) => w.postings > 0).length
 
   return (
     <div className="space-y-5">
@@ -123,7 +123,7 @@ export function DataView() {
               ['all', 'All'],
               ['OPEN', 'Open'],
               ['CLOSED', 'Closed'],
-              ['charged', `Charged this shift (${chargedCount})`],
+              ['issued', `Issued this shift (${issuedCount})`],
             ]}
           />
         )}
@@ -198,7 +198,7 @@ export function DataView() {
                   <th className="px-3 py-2 font-medium">Crew</th>
                   <th className="hidden px-3 py-2 font-medium sm:table-cell">Location</th>
                   <th className="hidden px-3 py-2 font-medium md:table-cell">Dates</th>
-                  <th className="px-3 py-2 text-right font-medium">Charged this shift</th>
+                  <th className="px-3 py-2 text-right font-medium">Issued this shift</th>
                 </tr>
               </thead>
               <tbody>

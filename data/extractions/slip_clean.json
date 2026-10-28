@@ -1,18 +1,82 @@
 {
-  "_provenance": {"kind": "hand-authored placeholder", "note": "Stand-in for model output until the photo is re-extracted with --live --save-extraction."},
-  "wo_number": {"value": "WO-26-0412", "raw": "WO-26-0412", "confidence": 0.96},
-  "date": {"value": "10/22/26", "raw": "10/22/26", "confidence": 0.94},
-  "taken_by": {"value": "J. Rivera", "raw": "J. Rivera", "confidence": 0.9},
-  "location": {"value": "Harlow Hall", "raw": "Harlow Hall", "confidence": 0.93},
-  "signature": {"value": true, "confidence": 0.97},
+  "wo_number": {
+    "value": "26-0412",
+    "raw": "26-0412",
+    "confidence": 0.95
+  },
+  "date": {
+    "value": "10/22/26",
+    "raw": "10/22/26",
+    "confidence": 0.95
+  },
+  "taken_by": {
+    "value": "J. Rivera",
+    "raw": "J. Rivera",
+    "confidence": 0.95
+  },
+  "location": {
+    "value": "Harlow Hall",
+    "raw": "Harlow Hall",
+    "confidence": 0.95
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9
+  },
   "items": [
-    {"part_number": {"value": "PL-1001", "raw": "PL-1001", "confidence": 0.92},
-     "part_name": {"value": "3/4 PVC elbow", "raw": "3/4 PVC elbow", "confidence": 0.9},
-     "qty": {"value": "6", "raw": "6", "confidence": 0.95},
-     "unit": {"value": "ea", "raw": "ea", "confidence": 0.9}},
-    {"part_number": {"value": "PL-1010", "raw": "PL-1010", "confidence": 0.9},
-     "part_name": {"value": "3/4 ball valve", "raw": "3/4 ball valve", "confidence": 0.88},
-     "qty": {"value": "2", "raw": "2", "confidence": 0.95},
-     "unit": {"value": "ea", "raw": "ea", "confidence": 0.9}}
-  ]
+    {
+      "part_number": {
+        "value": "PL-1001",
+        "raw": "PL-1001",
+        "confidence": 0.85
+      },
+      "part_name": {
+        "value": "3/4 PVC elbow",
+        "raw": "3/4 PVC elbow",
+        "confidence": 0.9
+      },
+      "qty": {
+        "value": "6",
+        "raw": "6",
+        "confidence": 0.95
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95
+      }
+    },
+    {
+      "part_number": {
+        "value": "PL-1010",
+        "raw": "PL-1010",
+        "confidence": 0.85
+      },
+      "part_name": {
+        "value": "3/4 ball valve",
+        "raw": "3/4 ball valve",
+        "confidence": 0.9
+      },
+      "qty": {
+        "value": "2",
+        "raw": "2",
+        "confidence": 0.95
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "slip_clean.jpeg",
+    "extracted_on": "2026-10-28",
+    "usage": {
+      "input_tokens": 2003,
+      "output_tokens": 792
+    }
+  }
 }

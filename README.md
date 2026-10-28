@@ -41,11 +41,15 @@ pip install -r requirements.txt
 |---|---|
 | `rapidfuzz` | core fuzzy matching (offline) |
 | `fastapi`, `uvicorn`, `python-multipart` | API and web UI server |
-| `anthropic` | **live** photo extraction only (optional) |
+| `anthropic`, `pillow` | **live** photo extraction only (optional): API client, and straightening/shrinking phone photos |
+| `python-dotenv` | optional: reads `ANTHROPIC_API_KEY` from a `.env` file in the project folder |
 | `pytest`, `httpx` | tests |
 
 **No API key or paid service is needed.** Photo extraction defaults to **mock mode**, which
 replays cached extractions from `data/extractions/`. Live mode is opt-in (see below).
+
+After changing Python code, restart `serve`: the server loads code once, at start. The page
+says so if it is newer than the running server.
 
 ## Run
 
@@ -76,7 +80,7 @@ in a local SQLite file (`data/runtime/ledger.db`, git-ignored; override with
 
 **Data tab.** The catalog and work orders the checker reads, as the mocked inventory holds
 them now: every part with start, posted and on-hand (low stock flagged), every work order
-with what was charged to it this shift, and a feed of stock changes (entry, W/O, who, and
+with what was issued against it this shift, and a feed of stock changes (entry, W/O, who, and
 before → after per part). Rows changed by the latest posting are highlighted. The tab
 refreshes every few seconds, so a posting from another window shows up too. Filter by
 "moved this shift", "running low", open/closed, or search.
@@ -89,6 +93,7 @@ python -m slipcheck check data/slips/01_clean.json         # representative case
 python -m slipcheck check data/slips/10_hard_case.json     # difficult case
 python -m slipcheck check data/slips/12_truncated.json     # invalid input -> rejected, exit 2
 python -m slipcheck check data/slips/10_hard_case.json --json   # machine-readable report
+python -m slipcheck impact                                 # modeled manual vs checked comparison
 pytest                                                     # tests
 ```
 
@@ -110,13 +115,23 @@ npm run build                      # rebuild frontend/dist, which the Python ser
 Photos (after adding them, see `data/photos/WHAT_TO_WRITE.md`):
 
 ```bash
-python -m slipcheck check data/photos/slip_hard_case.jpg            # MOCK: cached extraction
-python -m slipcheck check data/photos/slip_hard_case.jpg --live     # LIVE: needs ANTHROPIC_API_KEY
-python -m slipcheck check data/photos/slip_hard_case.jpg --live --save-extraction   # refresh cache
+python -m slipcheck check data/photos/slip_hard_case.jpeg            # MOCK: cached extraction
+python -m slipcheck check data/photos/slip_hard_case.jpeg --live     # LIVE: needs ANTHROPIC_API_KEY
+python -m slipcheck check data/photos/slip_hard_case.jpeg --live --save-extraction   # refresh cache
 ```
 
 Live mode uses Claude Haiku (`SLIPCHECK_MODEL` to override), about one call per slip,
 well under a cent each.
+
+**What happened on the real photos** (two handwritten slips on ruled paper, read by Claude Haiku):
+- `slip_clean.jpeg` was read exactly and came out `READY`.
+- `slip_hard_case.jpeg` came out `BLOCKED` with CLOSED_WO, PART_AMBIGUOUS and UNIT_AMBIGUOUS, as designed.
+- The model misread "duplex outlet" as **"dupler outlet" at 0.80 confidence**, above the 0.75
+  review threshold, so its own confidence did not flag the mistake. The rules still did: the
+  misread name fuzzy-matched both duplex receptacles equally, so the crew is asked which one,
+  and nothing wrong gets posted. This is why AI only reads and the rules decide.
+- The name "A. OKafor" was read at 0.85, so no HUMAN_REVIEW this time. The sample JSON
+  `10_hard_case.json` shows that path with a low-confidence read.
 
 ## Sample data (all synthetic)
 
@@ -126,7 +141,9 @@ well under a cent each.
 | `data/work_orders.csv` | 30 work orders across 10 crews, open and closed, with crew, crew members, location, dates |
 | `data/slips/*.json` | 20 slips as a clerk would transcribe them: clean pulls, one per failure mode, and a multi-line weekly pull |
 | `data/extractions/*.json` | cached photo extractions for mock mode (each says where it came from in `_provenance`) |
-| `forms/checkout_slip.html` | printable blank slip for making sample photos |
+| `data/photos/` | handwritten sample slips on paper, photographed (see `WHAT_TO_WRITE.md`) |
+| `data/impact_assumptions.json` | inputs to the impact estimate, each tagged observed / assumed / unknown |
+| `forms/checkout_slip.html` | printable blank slip (optional; a hand-drawn slip on ruled paper works too) |
 
 Buildings, crews, names, part numbers and W/O numbers are invented.
 
@@ -179,7 +196,7 @@ Entry to post:
   2. ? (unresolved) GN-4010 Door Hinge 4.5 in Satin Nickel [aisle D02]
 
 Issues:
-  [BLOCK] CLOSED_WO            wo_number: WO-26-0390 was closed on 2026-09-29. Parts cannot be charged to it.
+  [BLOCK] CLOSED_WO            wo_number: WO-26-0390 was closed on 2026-09-29. Parts can't be recorded against it.
            -> Move to WO-26-0415 (OPEN, Electrical, Pierce Library)
   [BLOCK] HUMAN_REVIEW         taken_by: Low-confidence read 'A. Okaf?r' (confidence 0.62). Check against the paper slip; not guessed.
   [BLOCK] PART_AMBIGUOUS       line 1: Name only: 'duplex outlet' fits more than one catalog part.
@@ -191,13 +208,81 @@ Issues:
            -> 1 PR
 
 Call A. Okafor (Electrical) now and ask:
-  1. [wo_number] WO-26-0390 was closed on 2026-09-29. Parts cannot be charged to it.
+  1. [wo_number] WO-26-0390 was closed on 2026-09-29. Parts can't be recorded against it.
      Suggested: Move to WO-26-0415 (OPEN, Electrical, Pierce Library)
   2. [line 1] Name only: 'duplex outlet' fits more than one catalog part.
      Options: EL-2010 Duplex Receptacle 20A White | EL-2011 Duplex Receptacle 15A White | EL-2020 GFCI Receptacle 20A
   3. [line 2] '2' with no unit, and GN-4010 is tracked in PR of 2. Did the crew take 2 PR (4 pieces) or 1 PR (2 pieces)?
      Options: 2 PR | 1 PR
 ```
+
+## Is it worth it? Manual vs checked (modeled)
+
+`python -m slipcheck impact` compares the manual process with the checker. **These are
+modeled numbers, not measured savings.** The same comparison is on the **Impact (estimated)** tab in the web UI,
+with a slider for every input (tagged Observed or Assumed), the break-even marked on the
+slip-error slider, and a banner saying what was measured and what was estimated. Two parts are kept separate:
+
+1. **Detection is measured by running the real validator.** Clean synthetic slips get
+   one injected error each (the error types seen at the counter), 300 per type. The
+   checker must catch them with its actual rules.
+2. **The cost model** combines that detection rate with storeroom numbers from
+   [data/impact_assumptions.json](data/impact_assumptions.json). Every input is tagged:
+
+| Input | Value (low / likely / high) | Source |
+|---|---|---|
+| Slips per week | 50 / 85 / 150 (10-20 a normal day, 40-50 a very busy one) | **observed** |
+| Count mismatches per week | 7 / 7.5 / 8 | **observed** |
+| Minutes to chase one mismatch | 30 / 45 / 60 (crew busy, gets put on hold) | **observed** |
+| Share of mismatches caused by a slip error | 20% / 50% / 80% | **assumed**: the key unknown |
+| Mix of error types | see file | types **observed**, frequencies **assumed** |
+| Minutes to answer a flag at the counter | 2 / 3 / 5 | assumed |
+| Seconds the check adds to every slip | 0 / 10 / 20 | assumed |
+| Mismatches never traced (left for the yearly audit) | 10% / 25% / 40% | assumed |
+| Staff hourly cost (USD) | 22 / 28 / 35 | assumed |
+| Who parts were charged to (crew or unit) | not used | **unknown**: decided by management and accounting; changes who pays, not how much |
+| Receiving-document call-backs | not counted | **observed**, but about vendor receipts, which this does not touch |
+
+Detection (real rules, seed 7):
+
+| Error written on the slip | Caught |
+|---|---|
+| Old, closed W/O number | 100% |
+| Pieces written for a pair-tracked part, no unit | 100% |
+| Part name only | 100% (84% resolved automatically and correctly, 16% sent to a person, 0% wrong) |
+| Field too unclear to read | 100% |
+| Not signed | 100% |
+| Neighbouring part number with the right name | 75% |
+| Wrong but plausible quantity | 1%: nothing on the slip contradicts it |
+| **Weighted by the assumed mix** | **78%** |
+
+Result:
+
+| | Pessimistic | Likely | Optimistic |
+|---|---|---|---|
+| Count mismatches / week (manual → checked) | 7.0 → 5.9 | 7.5 → 4.6 | 8.0 → 3.0 |
+| Staff hours / week (manual → checked) | 3.5 → 3.9 | 5.6 → 3.8 | 8.0 → 3.2 |
+| **Hours saved / year** | **-18** | **+91** | **+242** |
+| Staff cost saved / year (USD) | -402 | +2,557 | +8,456 |
+| Variances left for the yearly audit (manual → checked) | 35 → 30 | 94 → 57 | 160 → 61 |
+| Corrections logged with a reason / year | 54 | 146 | 249 |
+| **Break-even: share of mismatches that must be slip errors** | **36%** | **6%** | **0%** |
+
+How to read it:
+- **Pessimistic puts every input at its worst end at once**, so it is a floor, not a
+  forecast. In that floor the checker costs slightly more than it saves, mostly from 20
+  seconds of overhead on 150 slips a week. That is left in on purpose.
+- **The claim worth making is the break-even:** in the likely case the checker pays off as
+  long as about 6% or more of count mismatches start as a slip error. The one thing
+  that would sink it is that almost all drift comes from somewhere else (parts taken with
+  no slip, receiving errors, loss). A two-week shadow pilot measures exactly that.
+- **The yearly audit's main question was why each variance happened.** Every correction
+  made at the counter is logged with its cause, and **Download for accounting (CSV)** on the
+  Shift log tab exports one row per posted part with the problems found at entry and how
+  each was corrected.
+- Limits of the model: the false-alarm rate on clean synthetic slips is 0%, which is too
+  clean, since real slips abbreviate buildings and names. Each slip error is assumed to cause one
+  count mismatch. Staff time only; no part prices or write-off value yet.
 
 ## Checks
 
@@ -222,8 +307,9 @@ Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`
 
 | | |
 |---|---|
-| **Implemented** | slip schema shared by typed and photo input; all checks above; fuzzy part and W/O matching; unit-of-issue conversion; confidence-gated human review; one-click answers that re-check the slip; posting with duplicate protection and stock deduction; shift log (posted, on hold, read checks, problems caught, stock); web UI (React + FastAPI), CLI, JSON output; live vision extraction code path; tests |
-| **Mocked** | catalog and work orders are CSVs standing in for the inventory / CMMS system; "Post to inventory" writes to a local SQLite file, not a real inventory system; photo extraction defaults to cached JSON. The two shipped caches are **hand-authored placeholders** until re-extracted with `--live --save-extraction` (their `_provenance` says which) |
+| **Implemented** | slip schema shared by typed and photo input; all checks above; fuzzy part and W/O matching; unit-of-issue conversion; confidence-gated human review; one-click answers that re-check the slip; posting with duplicate protection and stock deduction; shift log (posted, on hold, read checks, problems caught, stock); Data tab (live stock and work orders, change feed); accounting CSV export with root cause per line; detection measurement on injected errors; web UI (React + FastAPI), CLI, JSON output; live vision extraction code path; tests |
+| **Mocked** | catalog and work orders are CSVs standing in for the inventory / CMMS system; "Post to inventory" writes to a local SQLite file, not a real inventory system; photo extraction defaults to cached JSON. The two shipped caches are **real Claude Haiku readings** of handwritten slips (`data/photos/`), saved with `--live --save-extraction` on 2026-10-28; mock mode replays them, so no key is needed to see what the model actually read |
+| **Estimated** | the hours and dollars on the Impact tab and from `slipcheck impact`: storeroom volumes are observed, most other inputs are assumed, only the detection rates are measured. Not a measured saving |
 | **Deferred** | writing to a real inventory / CMMS; users and sign-in (the shift log is one shared log); notifying the crew (the prototype produces the questions, a person makes the call); learning crew-specific habits; multi-page slips; measuring self-reported confidence against real accuracy |
 
 ## Known limitations
@@ -234,9 +320,31 @@ Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`
 
 ## Time, AI use, and prior work
 
-- **Time spent:** _fill in_
-- **AI use:** _fill in_ (e.g. Claude Code for scaffolding and code; how output was checked: ran every sample, read each report against the expected failure, tests for each rule)
-- **Prior work reused:** none; written for this case study.
+**Time spent: about 4.5 hours in total, over the 4-hour guideline.** Split so the in-scope
+work can be judged on its own:
+
+| Within about the first 4 hours (the brief's prototype) | After, beyond the time limit |
+|---|---|
+| Rule-based validator with all checks, sample data, CLI, tests | Shift log and posting to the mocked inventory |
+| Photo reading (live and mock), confidence-gated human review | Data tab |
+| Web UI showing the slip with one-click answers | Impact estimate (CLI and tab) and accounting CSV |
+| Representative and invalid-input cases | Larger dataset (60 parts, 30 W/Os, 20 slips) |
+
+I went past the limit on the shift log and impact estimate because a claim that the check
+saves time needed something to back it. Both are labeled as estimated where they estimate.
+
+**AI use.** Built with Claude Code (Claude) as a pair programmer: scaffolding, most of the
+code, the UI, and drafting this README. The problem, the storeroom facts and every observed
+number come from my own work in the storeroom; the AI did not supply them. How I checked
+its output:
+- ran every sample slip and compared each report with the failure it was written to show;
+- drove the web UI in a real browser (scripted with Playwright) through the full demo path and at
+  phone width, reading screenshots;
+- a test suite for every rule, the API, the shift log and the impact model;
+- corrected it where its assumptions were wrong for my storeroom (for example, parts were not
+  charged to crews, and receiving call-backs are not part of the savings).
+
+**Prior work reused:** none; written for this case study.
 
 ## What I would investigate next
 
@@ -244,3 +352,6 @@ Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`
 2. **How soon slips are actually entered.** Catching errors "while the crew is reachable" assumes same-day entry; batch entry at week's end shrinks the benefit.
 3. Error frequency by type on real slips, to decide which checks earn their place.
 4. Extraction accuracy on 50+ real handwritten slips, and where to set the review threshold.
+5. **The same check on the receiving side.** Scanned vendor documents were already reviewed
+   within 1-2 days. Reading them automatically and matching them to the order and to what
+   was put away is the same pattern (document → extraction → rule checks against the system).

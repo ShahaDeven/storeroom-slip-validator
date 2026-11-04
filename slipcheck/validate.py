@@ -46,6 +46,7 @@ class Field:
     value: Any
     confidence: float = 1.0
     raw: str | None = None
+    source: dict | None = None  # provenance: document, line, method, model; never invented coordinates
 
     @property
     def empty(self) -> bool:
@@ -135,7 +136,7 @@ class Report:
 def as_field(x: Any) -> Field:
     if isinstance(x, dict) and "value" in x:
         conf = x.get("confidence")
-        return Field(x["value"], 1.0 if conf is None else float(conf), x.get("raw"))
+        return Field(x["value"], 1.0 if conf is None else float(conf), x.get("raw"), x.get("source"))
     return Field(x)
 
 

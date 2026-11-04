@@ -108,6 +108,22 @@ def cmd_impact(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_eval(args: argparse.Namespace) -> int:
+    from slipcheck import eval as evaluation
+
+    try:
+        if args.sweep:
+            print(evaluation.format_sweep(evaluation.sweep_thresholds(args.split)))
+            return 0
+        report = evaluation.run(args.split, live=args.live, max_calls=args.max_calls,
+                                confirm_frozen=args.confirm_frozen, rerun=args.rerun)
+    except evaluation.EvalRefused as e:
+        print(f"Refused: {e}", file=sys.stderr)
+        return 2
+    print(json.dumps(report, indent=2) if args.json else evaluation.format_report(report))
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -131,6 +147,15 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("--seed", type=int, default=7)
     i.add_argument("--json", action="store_true")
     i.set_defaults(fn=cmd_impact)
+    e = sub.add_parser("eval", help="exploratory evaluation of photo reading + validation on labeled slips")
+    e.add_argument("--split", choices=["dev", "heldout"], default="dev")
+    e.add_argument("--live", action="store_true", help="read photos that have no cached reading (needs ANTHROPIC_API_KEY)")
+    e.add_argument("--max-calls", type=int, default=12, help="hard cap on live API calls in this run")
+    e.add_argument("--confirm-frozen", action="store_true", help="held-out only: rules and thresholds are frozen and committed")
+    e.add_argument("--rerun", action="store_true", help="held-out only: reproduce an earlier run")
+    e.add_argument("--sweep", action="store_true", help="re-score cached readings at several review thresholds (dev only, no API calls)")
+    e.add_argument("--json", action="store_true")
+    e.set_defaults(fn=cmd_eval)
     s = sub.add_parser("serve", help="start the web UI and API")
     s.add_argument("--port", type=int, default=8000)
     s.set_defaults(fn=cmd_serve)

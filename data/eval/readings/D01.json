@@ -1,0 +1,199 @@
+{
+  "wo_number": {
+    "value": "26-0470",
+    "raw": "26-0470",
+    "confidence": 0.95,
+    "source": {
+      "document": "D01.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/26/26",
+    "raw": "10/26/26",
+    "confidence": 0.9,
+    "source": {
+      "document": "D01.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "B. Ferris",
+    "raw": "B. Ferris",
+    "confidence": 0.95,
+    "source": {
+      "document": "D01.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "Knox Hall",
+    "raw": "Knox Hall",
+    "confidence": 0.95,
+    "source": {
+      "document": "D01.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "D01.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "EL-2091",
+        "raw": "EL-2091",
+        "confidence": 0.9,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "buy eye light",
+        "raw": "buy eye light",
+        "confidence": 0.7,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "1",
+        "raw": "1",
+        "confidence": 0.95,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "EL-2040",
+        "raw": "EL-2040",
+        "confidence": 0.9,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 2
+        }
+      },
+      "part_name": {
+        "value": "t8 ballast",
+        "raw": "t8 ballast",
+        "confidence": 0.9,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 2
+        }
+      },
+      "qty": {
+        "value": "1",
+        "raw": "1",
+        "confidence": 0.95,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 2
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95,
+        "source": {
+          "document": "D01.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 2
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "D01.jpeg",
+    "extracted_on": "2026-11-04",
+    "usage": {
+      "input_tokens": 2297,
+      "output_tokens": 867
+    }
+  }
+}

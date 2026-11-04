@@ -1,0 +1,257 @@
+{
+  "wo_number": {
+    "value": "WO-26-0461",
+    "raw": "WO-26-0461",
+    "confidence": 0.9,
+    "source": {
+      "document": "D05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/08/26",
+    "raw": "10/08/26",
+    "confidence": 0.85,
+    "source": {
+      "document": "D05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "N. Petrov",
+    "raw": "N. Petrov",
+    "confidence": 0.9,
+    "source": {
+      "document": "D05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "Wexler gym",
+    "raw": "Wexler gym",
+    "confidence": 0.8,
+    "source": {
+      "document": "D05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "D05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "HV-3630",
+        "raw": "Hv-3630",
+        "confidence": 0.7,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "condensate pump",
+        "raw": "condensate pump",
+        "confidence": 0.85,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "1",
+        "raw": "1",
+        "confidence": 0.8,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.9,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "GN-4060",
+        "raw": "GN-4060",
+        "confidence": 0.85,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 2
+        }
+      },
+      "part_name": {
+        "value": "silicone",
+        "raw": "silicone",
+        "confidence": 0.9,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 2
+        }
+      },
+      "qty": {
+        "value": "6",
+        "raw": "6",
+        "confidence": 0.95,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 2
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.9,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 2
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "PL-1040",
+        "raw": "PL-1040",
+        "confidence": 0.75,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 3
+        }
+      },
+      "part_name": {
+        "value": "thread tape",
+        "raw": "thread tape",
+        "confidence": 0.9,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 3
+        }
+      },
+      "qty": {
+        "value": "3",
+        "raw": "3",
+        "confidence": 0.95,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 3
+        }
+      },
+      "unit": {
+        "value": "roll",
+        "raw": "roll",
+        "confidence": 0.9,
+        "source": {
+          "document": "D05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 3
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "D05.jpeg",
+    "extracted_on": "2026-11-04",
+    "usage": {
+      "input_tokens": 2353,
+      "output_tokens": 1119
+    }
+  }
+}

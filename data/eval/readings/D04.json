@@ -1,0 +1,141 @@
+{
+  "wo_number": {
+    "value": "26-0471",
+    "raw": "26-0471",
+    "confidence": 0.9,
+    "source": {
+      "document": "D04.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/23/26",
+    "raw": "10/23/26",
+    "confidence": 0.9,
+    "source": {
+      "document": "D04.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "B. Ferris",
+    "raw": "B. Ferris",
+    "confidence": 0.95,
+    "source": {
+      "document": "D04.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "Hale Admin",
+    "raw": "Hale Admin",
+    "confidence": 0.95,
+    "source": {
+      "document": "D04.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "D04.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": null,
+        "raw": "",
+        "confidence": 1.0,
+        "source": {
+          "document": "D04.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "teflon tape",
+        "raw": "teflon tape",
+        "confidence": 0.95,
+        "source": {
+          "document": "D04.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "2",
+        "raw": "2",
+        "confidence": 0.95,
+        "source": {
+          "document": "D04.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "rl",
+        "raw": "rl",
+        "confidence": 0.6,
+        "source": {
+          "document": "D04.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "D04.jpeg",
+    "extracted_on": "2026-11-04",
+    "usage": {
+      "input_tokens": 2129,
+      "output_tokens": 672
+    }
+  }
+}

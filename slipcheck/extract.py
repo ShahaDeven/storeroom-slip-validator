@@ -55,13 +55,41 @@ def cache_path(photo: Path) -> Path:
     return CACHE_DIR / f"{photo.stem}.json"
 
 
+HEADER_FIELDS = ("wo_number", "date", "taken_by", "location", "signature")
+ITEM_FIELDS = ("part_number", "part_name", "qty", "unit")
+
+
+def add_provenance(data: dict, document: str) -> dict:
+    """Tag every field with where it came from: adds `source` to each field that lacks one.
+
+    Only what is really known is recorded: the document, the slip line, and how it was read.
+    No coordinates: a vision model's boxes would be guesses, so none are invented. (Digital
+    PDFs can carry real word boxes; handwriting cannot.)
+    """
+    prov = data.get("_provenance") or {}
+    base = {"document": document, "method": "vision", "model": prov.get("model"),
+            "extracted_at": prov.get("extracted_on"), "review_status": "unreviewed"}
+
+    def tag(field, name, line):
+        if isinstance(field, dict) and "value" in field and "source" not in field:
+            field["source"] = base | {"field": name, "line": line}
+
+    for name in HEADER_FIELDS:
+        tag(data.get(name), name, None)
+    for n, item in enumerate(data.get("items") or [], start=1):
+        if isinstance(item, dict):
+            for name in ITEM_FIELDS:
+                tag(item.get(name), name, n)
+    return data
+
+
 def extract_mock(photo: Path) -> dict:
     path = cache_path(photo)
     if not path.exists():
         raise ExtractionError(
             f"No cached extraction for '{photo.name}' (looked for {path}). "
             "Run with --live once (needs ANTHROPIC_API_KEY) and --save-extraction to create it.")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return add_provenance(json.loads(path.read_text(encoding="utf-8")), photo.name)
 
 
 def _parse_json(text: str) -> dict:
@@ -123,7 +151,7 @@ def extract_live(photo: Path) -> dict:
         "extracted_on": date.today().isoformat(),
         "usage": {"input_tokens": msg.usage.input_tokens, "output_tokens": msg.usage.output_tokens},
     }
-    return data
+    return add_provenance(data, photo.name)
 
 
 def extract(photo: Path, live: bool = False, save: bool = False) -> dict:

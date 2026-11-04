@@ -151,6 +151,7 @@ Entry to post:
 Issues:
   [BLOCK] CLOSED_WO            wo_number: WO-26-0390 was closed on 2026-09-29. Parts can't be recorded against it.
            -> Move to WO-26-0415 (OPEN, Electrical, Pierce Library)
+           -> Move to WO-26-0416 (OPEN, Electrical, Fenwick Labs)
   [BLOCK] HUMAN_REVIEW         taken_by: Low-confidence read 'A. Okaf?r' (confidence 0.62). Check against the paper slip; not guessed.
   [BLOCK] PART_AMBIGUOUS       line 1: Name only: 'duplex outlet' fits more than one catalog part.
            -> EL-2010 Duplex Receptacle 20A White [aisle B03] (match 100)
@@ -280,7 +281,7 @@ output:
 
 | Code | Severity | Who answers |
 |---|---|---|
-| `CLOSED_WO`, `UNKNOWN_WO`, `MISSING_WO` | block | crew (an open W/O on the same crew + location is suggested) |
+| `CLOSED_WO`, `UNKNOWN_WO`, `MISSING_WO` | block | crew (only that crew's own open W/Os are suggested, same building first; a person on no crew gets a labeled same-building fallback with no one-click fix) |
 | `UNIT_AMBIGUOUS` | block | crew. A bare number on a pair/box part is **never** converted silently |
 | `UNIT_REMAINDER` | block | crew ("3 pieces" of a pair-issued part) |
 | `UNIT_CONVERTED`, `UNIT_ASSUMED` | info / warn | written unit converted; odd bare number read as pairs |

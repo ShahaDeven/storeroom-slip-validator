@@ -175,20 +175,39 @@ def _wo_label(wo: WorkOrder) -> str:
     return f"{wo.wo_number} ({wo.status}, {wo.crew}, {wo.location})"
 
 
+def _crews_of(ref: Reference, person: str | None, crew: str | None) -> set[str]:
+    """The crew named by the caller, else every crew this person is listed on."""
+    if crew:
+        return {crew}
+    return {wo.crew for wo in ref.work_orders.values() if _is_member(person, wo)}
+
+
 def _open_alternatives(ref: Reference, taken_by: str | None, location: str | None,
-                       crew: str | None) -> list[WorkOrder]:
-    """Open W/Os the parts most likely belong on: same location and crew first."""
-    scored = []
-    for wo in ref.work_orders.values():
-        if not wo.is_open:
-            continue
-        same_loc = bool(location) and _same_place(location, wo.location)
-        same_crew = _is_member(taken_by, wo) or (crew is not None and wo.crew == crew)
-        score = 2 * same_loc + same_crew
-        if score:
-            scored.append((score, wo))
-    scored.sort(key=lambda s: -s[0])
-    return [wo for _, wo in scored[:3]]
+                       crew: str | None) -> tuple[list[WorkOrder], bool]:
+    """Open W/Os the parts most likely belong on, and whether that is crew-confirmed.
+
+    Only the crew's own work orders are suggested, the same building ranked first. If the
+    crew can't be worked out (a person on no work order), fall back to open W/Os in the same
+    building and say so (confirmed=False), so no one-click fix points at another crew's job.
+    """
+    open_wos = [w for w in ref.work_orders.values() if w.is_open]
+    crews = _crews_of(ref, taken_by, crew)
+    if crews:
+        scored = [(2 if location and _same_place(location, w.location) else 0, w)
+                  for w in open_wos if w.crew in crews]
+        scored.sort(key=lambda s: (-s[0], s[1].wo_number))
+        return [w for _, w in scored[:3]], True
+    if location:
+        return [w for w in open_wos if _same_place(location, w.location)][:3], False
+    return [], False
+
+
+def _wo_choices(alts: list[WorkOrder], confirmed: bool, move: bool = False) -> tuple[list[str], list[dict]]:
+    """Suggestion text and one-click fixes for a list of alternative W/Os."""
+    if not confirmed:
+        return [f"Same building, crew unknown: {_wo_label(w)}" for w in alts], []
+    label = (lambda w: f"Move to {_wo_label(w)}") if move else _wo_label
+    return [label(w) for w in alts], [_wo_fix(w) for w in alts]
 
 
 def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue]
@@ -200,9 +219,9 @@ def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue
         issues.append(_review("wo_number", f))
         return None, None
     if f.empty:
-        alts = _open_alternatives(ref, taken_by, location, None)
+        suggestions, fixes = _wo_choices(*_open_alternatives(ref, taken_by, location, None))
         issues.append(Issue(BLOCK, "MISSING_WO", "wo_number", "No W/O number on the slip.",
-                            CREW, [_wo_label(w) for w in alts], [_wo_fix(w) for w in alts]))
+                            CREW, suggestions, fixes))
         return None, None
     if f.unsure:
         issues.append(_review("wo_number", f))
@@ -211,24 +230,26 @@ def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue
     wo = ref.work_orders.get(wo_number) if wo_number else None
     if wo is None:
         # Likely a transposed digit: look-alike numbers, but only ones that fit this
-        # crew or location; otherwise fall back to the crew's open W/Os.
-        fits = {w.wo_number for w in _open_alternatives(ref, taken_by, location, None)}
+        # crew; otherwise fall back to the crew's open W/Os.
+        alts, confirmed = _open_alternatives(ref, taken_by, location, None)
+        fits = {w.wo_number for w in alts}
         close = [k for k, _, _ in process.extract(wo_number or str(f.value), list(ref.work_orders),
                                                   scorer=fuzz.ratio, limit=5, score_cutoff=75)
                  if k in fits]
         options = [ref.work_orders[k] for k in (close or sorted(fits))]
+        suggestions, fixes = _wo_choices(options, confirmed)
         issues.append(Issue(
             BLOCK, "UNKNOWN_WO", "wo_number",
-            f"W/O '{f.value}' does not exist in the system.", CREW,
-            [_wo_label(w) for w in options], [_wo_fix(w) for w in options]))
+            f"W/O '{f.value}' does not exist in the system.", CREW, suggestions, fixes))
         return None, wo_number
 
     if not wo.is_open:
-        alts = _open_alternatives(ref, taken_by, location or wo.location, wo.crew)
+        suggestions, fixes = _wo_choices(
+            *_open_alternatives(ref, taken_by, location or wo.location, wo.crew), move=True)
         issues.append(Issue(
             BLOCK, "CLOSED_WO", "wo_number",
             f"{wo.wo_number} was closed on {wo.closed}. Parts can't be recorded against it.",
-            CREW, [f"Move to {_wo_label(w)}" for w in alts], [_wo_fix(w) for w in alts]))
+            CREW, suggestions, fixes))
     if location and not _same_place(location, wo.location):
         issues.append(Issue(WARN, "LOCATION_MISMATCH", "location",
                             f"Slip says '{location}' but {wo.wo_number} is at {wo.location}.", CREW,

@@ -275,3 +275,50 @@ def test_odd_pieces_offer_both_whole_pair_readings(ref):
     r = validate(slip(items=[item(part_number="GN-4001", qty=3, unit="pcs")]), ref, TODAY)
     issue = next(i for i in r.issues if i.code == "UNIT_REMAINDER")
     assert [f["set"] for f in issue.fixes] == [{"qty": 1, "unit": "PR"}, {"qty": 2, "unit": "PR"}]
+
+
+# ------------------------------------------------------------ crew-aware W/O suggestions
+# Regression: any open W/O in the same building used to qualify, so an electrician was
+# offered the custodial crew's work order (WO-26-0462) for a slip on a closed Electrical W/O.
+
+
+def _wo_issue(report, code):
+    return next(i for i in report.issues if i.code == code)
+
+
+def _suggested(issue):
+    return [f["set"]["wo_number"] for f in issue.fixes]
+
+
+def test_closed_wo_never_suggests_another_crews_work_order(ref):
+    r = validate(json.loads((SLIPS / "10_hard_case.json").read_text()), ref, TODAY)
+    suggested = _suggested(_wo_issue(r, "CLOSED_WO"))
+    assert suggested[0] == "WO-26-0415"  # same crew, same building
+    assert "WO-26-0462" not in suggested  # custodial, same building, different crew
+    assert {ref.work_orders[w].crew for w in suggested} == {"Electrical"}
+
+
+def test_same_building_is_ranked_ahead_of_other_buildings_within_the_crew(ref):
+    r = validate(slip(wo_number="WO-26-0390", taken_by="A. Okafor", location="Pierce Library"), ref, TODAY)
+    assert _suggested(_wo_issue(r, "CLOSED_WO")) == ["WO-26-0415", "WO-26-0416"]
+
+
+def test_missing_wo_uses_the_crew_of_the_person_who_took_the_parts(ref):
+    r = validate(slip(wo_number="", taken_by="A. Okafor", location="Pierce Library"), ref, TODAY)
+    suggested = _suggested(_wo_issue(r, "MISSING_WO"))
+    assert "WO-26-0462" not in suggested
+    assert {ref.work_orders[w].crew for w in suggested} == {"Electrical"}
+
+
+def test_person_on_no_crew_gets_a_labeled_fallback_and_no_one_click_fix(ref):
+    for wo in ("", "26-9999"):  # missing, and a number that does not exist
+        r = validate(slip(wo_number=wo, taken_by="Z. Nobody"), ref, TODAY)
+        issue = _wo_issue(r, "MISSING_WO" if wo == "" else "UNKNOWN_WO")
+        assert issue.fixes == []
+        assert issue.suggestions and all(s.startswith("Same building, crew unknown") for s in issue.suggestions)
+
+
+def test_nothing_to_go_on_means_no_suggestions(ref):
+    r = validate(slip(wo_number="", taken_by=None, location=None), ref, TODAY)
+    issue = _wo_issue(r, "MISSING_WO")
+    assert issue.suggestions == [] and issue.fixes == []

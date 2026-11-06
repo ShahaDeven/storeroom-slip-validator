@@ -28,6 +28,11 @@
   --color-manila-deep: #c9b27a;
   --color-bench: #1a2023;
   --color-bench-2: #262e32;
+
+  /* Failure analysis marks (validated as a set: green / amber / red, CVD-separated). */
+  --color-mark-ok: #2b7449;
+  --color-mark-warn: #b07a10;
+  --color-mark-bad: #c01f1f;
 }
 
 @layer base {
@@ -84,6 +89,11 @@
     border-radius: 9999px;
     background: var(--color-bench);
     box-shadow: 0 0 0 5px var(--color-manila-deep);
+  }
+
+  /* Secondary encoding for "wrong / nothing raised", so it never relies on red alone. */
+  .hatch-bad {
+    background: repeating-linear-gradient(135deg, var(--color-mark-bad) 0 3px, #e98b8b 3px 5px);
   }
 
   .stamp {

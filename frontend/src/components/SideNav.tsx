@@ -1,6 +1,6 @@
 import type { ShiftLog } from '../types'
 
-export type View = 'counter' | 'receiving' | 'log' | 'data' | 'adversarial' | 'impact'
+export type View = 'counter' | 'receiving' | 'log' | 'data' | 'failures' | 'adversarial' | 'impact'
 
 const GROUPS: { title: string; items: { view: View; label: string; hint: string }[] }[] = [
   {
@@ -20,6 +20,7 @@ const GROUPS: { title: string; items: { view: View; label: string; hint: string 
   {
     title: 'Does it hold up?',
     items: [
+      { view: 'failures', label: 'Failure analysis', hint: 'Where reading and rules go wrong' },
       { view: 'adversarial', label: 'Adversarial suite', hint: 'Cases built to break it' },
       { view: 'impact', label: 'Impact (modeled)', hint: 'A model, not measured' },
     ],

@@ -327,3 +327,73 @@ export interface EvalSummary {
   heldout_locked: EvalSplit | null
   heldout_corrected: EvalSplit | null
 }
+
+// ------------------------------------------------------------ failure analysis
+
+export type Fate = 'stopped' | 'warned_only' | 'nothing_raised'
+
+export interface FailureAnalysis {
+  split: string
+  title: string
+  source: string
+  commit: string | null
+  strict_known: boolean
+  splits: { key: string; title: string }[]
+  tiles: {
+    slips: number
+    posting_wrong_critical: Prop
+    posting_wrong_any: Prop
+    slips_reviewed: Prop
+    confident_wrong: { k: number; n: number }
+  }
+  findings: string[]
+  by_field: {
+    field: string
+    label: string
+    fields: number
+    wrong: number
+    stopped: number
+    warned_only: number
+    nothing_raised: number
+    posted: number
+    critical: 'always' | 'when no part number' | 'no'
+  }[]
+  false_positives: { field: string; label: string; reviews: number; rule_flags: number }[]
+  unnecessary_reviews: Prop
+  misses: {
+    slip: string
+    style: string
+    condition: string
+    field: string
+    line: number | null
+    paper: string
+    read: string
+    confidence: number | null
+    critical: boolean
+    fate: Fate
+    kind: string
+    posted: boolean
+  }[]
+  miss_kinds: { kind: string; count: number }[]
+  confidence: {
+    bins: { from: number; to: number; correct: number; wrong: number }[]
+    below: number
+    threshold: number
+    no_confidence: number
+  }
+  reviews: {
+    per_slip: { slip: string; style: string; reviews: number; needless: number; posted_wrong: number }[]
+    histogram: { reviews: number; slips: number }[]
+  }
+  by_style: FailureGroup[]
+  by_condition: FailureGroup[]
+}
+
+export interface FailureGroup {
+  key: string
+  label: string
+  slips: number
+  fields_correct: Prop
+  slips_reviewed: number
+  slips_posting_wrong: number
+}

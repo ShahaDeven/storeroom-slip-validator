@@ -201,6 +201,17 @@ def eval_summary() -> dict:
             "heldout_corrected": pick("results_heldout_corrected.json")}
 
 
+@app.get("/api/eval/failures")
+def eval_failures(split: str = "heldout_corrected") -> dict:
+    """Where reading + rules fail, from the saved eval results (no model calls)."""
+    from slipcheck.failures import NoResults, analyze
+
+    try:
+        return analyze(split)
+    except NoResults as e:
+        raise HTTPException(404, str(e))
+
+
 @app.get("/api/adversarial")
 def adversarial_suite() -> dict:
     """Run every adversarial case now, through the real rules and posting code, in throwaway ledgers."""

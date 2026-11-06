@@ -3,6 +3,7 @@ import { api } from './api'
 import { AdversarialView } from './components/AdversarialView'
 import { Counter } from './components/Counter'
 import { DataView } from './components/DataView'
+import { FailureView } from './components/FailureView'
 import { ImpactView } from './components/ImpactView'
 import { ReceivingView } from './components/ReceivingView'
 import { Inbox, titleOf } from './components/Inbox'
@@ -221,7 +222,11 @@ export default function App() {
           />
         </div>
         <div className="min-w-0">
-      {view === 'adversarial' ? (
+      {view === 'failures' ? (
+        <div className="mt-6">
+          <FailureView onAdversarial={() => setView('adversarial')} />
+        </div>
+      ) : view === 'adversarial' ? (
         <div className="mt-6">
           <AdversarialView />
         </div>

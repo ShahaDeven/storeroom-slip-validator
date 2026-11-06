@@ -49,6 +49,7 @@ testable, and explainable to a supervisor or an auditor.
 |---|---|
 | **Counter** | The slip drawn as the paper copy, problems marked next to each field, a HOLD / READY TO POST stamp, and the questions to ask the crew with one-click answers. Answering re-checks the slip; corrections appear over the struck-through original. Drop in your own photo or JSON slip on the left. |
 | **Receiving** | A delivery receipt checked against its purchase order. The page is shown with each problem's real word box drawn on it (PDF text layer; images read by the vision model get no invented boxes). Over-shipments, pack-size questions, unordered items, duplicates and closed POs block with one-click decisions (receive the open amount, accept, return to vendor, hold for the buyer); a short delivery is a partial, not a failure, and the PO line stays open. |
+| **Adversarial suite** | Deliberately difficult cases (a duplicate under a new file name or receipt number, the right PO from the wrong supplier, partial then over deliveries, confident misreads), each with what *should* happen next to what did. They run live, through the same rules and posting code, in a throwaway ledger. Known gaps are listed first, each with why it got in and what would close it. See [Adversarial suite](#adversarial-suite). |
 | **Shift log** | What was posted (W/O, location, parts, aisles, answers given at the counter), what is on hold and why, slips waiting on a handwriting check, problems caught before the count, stock after posting, and **Download for accounting (CSV)**: one row per posted part with the cause of every correction. |
 | **Data** | Every part with start, posted and on-hand (low stock flagged), every work order with what was issued against it, and a feed of stock changes. Rows changed by the latest posting are highlighted; refreshes every few seconds. |
 | **Impact (estimated)** | Manual vs with the check, with a slider for every input tagged Observed or Assumed and the break-even marked. See [Is it worth it?](#is-it-worth-it-estimated). |
@@ -70,6 +71,7 @@ python -m slipcheck check data/slips/10_hard_case.json --json  # machine-readabl
 python -m slipcheck impact                                     # estimated manual vs checked comparison
 python -m slipcheck receive demo                               # every sample delivery receipt, one line each
 python -m slipcheck receive data/receiving/receipts/R03.pdf    # one receipt in full (over-shipment)
+python -m slipcheck adversarial                                # difficult cases: expected vs actual (exit 1 on a regression)
 python -m slipcheck eval --split dev                           # evaluation of photo reading + rules (see EVAL below)
 python -m slipcheck eval --split heldout --corrected          # held-out result with the recorded correction (no API calls)
 
@@ -253,6 +255,25 @@ Price variance is deliberately not checked: these receipts confirm quantities, n
 belong to a later invoice match. Posting raises each PO line's received-to-date (mocked, local
 SQLite) and every check and posting lands in an audit trail (`GET /api/events`). Receiving does
 not yet change on-hand stock in the Data tab.
+
+## Adversarial suite
+
+`python -m slipcheck adversarial` (and the **Adversarial suite** tab) runs 13 cases built to
+break the checker. Each one states the outcome it *should* have, then runs the real validator and
+the real posting step in a throwaway SQLite file, so the shift log is never touched. Current
+result: **9 as expected, 4 known gaps, 0 regressions.**
+
+| | Cases |
+|---|---|
+| Stopped, as they should be | the same receipt under a new file name; the same delivery under a new receipt number; right PO, wrong supplier; partial, then the rest, then one too many; a second delivery bigger than what is open; an unreadable PO number; a posted slip keyed in again; a pair-tracked part with no unit |
+| Posted correctly, with warnings | one part written in two units on one receipt (5 BX + 500 pcs) |
+| **Got in (known gaps)** | a confident wrong quantity on a receipt (A7) and on a slip (S2); a wrong W/O digit that lands on another crew's real W/O, which is only warned about (S3); a part number one digit off whose description differs only in size (S4) |
+
+Two rules exist because this suite failed when it was first run: receipts with the same PO, date
+and quantities as one already received under another number now block (`POSSIBLE_DUPLICATE`),
+and a vendor mismatch blocks instead of warning. The slip gaps (S3, S4) are not fixed yet, because
+the slip rules are frozen for the evaluation; fixing them needs a new round of development data.
+`tests/test_adversarial.py` pins the known gaps, so a gap that closes, or a new failure, shows up.
 
 ## Evaluation (exploratory)
 

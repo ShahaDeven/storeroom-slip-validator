@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from './api'
+import { AdversarialView } from './components/AdversarialView'
 import { Counter } from './components/Counter'
 import { DataView } from './components/DataView'
 import { ImpactView } from './components/ImpactView'
 import { ReceivingView } from './components/ReceivingView'
 import { Inbox, titleOf } from './components/Inbox'
 import { ShiftLog } from './components/ShiftLog'
+import { SideNav, type View } from './components/SideNav'
 import { SlipPaper } from './components/SlipPaper'
 import { applySet, fieldAt, pinKey, shown, whereLabel } from './slip'
 import type { Fix, Issue, Meta, Report, Sample, ShiftLog as Log, Slip } from './types'
@@ -16,7 +18,6 @@ interface Loaded {
   photo: string | null
 }
 
-type View = 'counter' | 'receiving' | 'log' | 'data' | 'impact'
 
 export default function App() {
   const [view, setView] = useState<View>('counter')
@@ -208,64 +209,23 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-rail/60">
-        <div role="tablist" aria-label="View" className="flex max-w-full gap-1 overflow-x-auto">
-          {(
-            [
-              ['counter', 'Counter'],
-              ['receiving', 'Receiving'],
-              ['log', 'Shift log'],
-              ['data', 'Data'],
-              ['impact', 'Impact (estimated)'],
-            ] as const
-          ).map(([v, label]) => (
-            <button
-              key={v}
-              role="tab"
-              type="button"
-              aria-selected={view === v}
-              onClick={() => {
-                setView(v)
-                if (v === 'log') refreshLog()
-              }}
-              className={`-mb-px shrink-0 cursor-pointer border-b-[3px] px-3 pt-1 pb-2 font-cond text-lg font-semibold whitespace-nowrap ${
-                view === v ? 'border-graphite text-graphite' : 'border-transparent text-graphite-2 hover:text-graphite'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {counts && (
-          <button
-            type="button"
-            onClick={() => {
-              setView('log')
-              refreshLog()
+      <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8">
+        <div className="lg:mt-6">
+          <SideNav
+            view={view}
+            counts={counts}
+            onView={(v) => {
+              setView(v)
+              if (v === 'log') refreshLog()
             }}
-            className="mb-2 flex cursor-pointer flex-wrap gap-x-5 gap-y-1 text-sm text-graphite-2 hover:text-graphite"
-            aria-label="Open the shift log"
-          >
-            <span>
-              <b className="font-semibold text-stamp">{counts.posted}</b> posted
-            </span>
-            <span>
-              <b className={`font-semibold ${counts.on_hold ? 'text-redpen' : 'text-graphite'}`}>{counts.on_hold}</b> on hold
-            </span>
-            <span>
-              <b className={`font-semibold ${counts.needs_review ? 'text-redpen' : 'text-graphite'}`}>
-                {counts.needs_review}
-              </b>{' '}
-              waiting on a read check
-            </span>
-            <span>
-              <b className="font-semibold text-graphite">{counts.caught}</b> problems caught
-            </span>
-          </button>
-        )}
-      </div>
-
-      {view === 'receiving' ? (
+          />
+        </div>
+        <div className="min-w-0">
+      {view === 'adversarial' ? (
+        <div className="mt-6">
+          <AdversarialView />
+        </div>
+      ) : view === 'receiving' ? (
         <div className="mt-6">
           <ReceivingView />
         </div>
@@ -287,7 +247,7 @@ export default function App() {
           />
         </div>
       ) : (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_26rem]">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_23rem] 2xl:grid-cols-[15rem_minmax(0,1fr)_26rem]">
           <aside className="lg:sticky lg:top-6 lg:self-start">
             <Inbox samples={samples} selected={selected} onSelect={select} onUpload={upload} />
           </aside>
@@ -359,6 +319,8 @@ export default function App() {
           </section>
         </div>
       )}
+        </div>
+      </div>
     </div>
   )
 }

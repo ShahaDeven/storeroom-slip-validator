@@ -103,11 +103,17 @@ def _check_po(f_po, f_vendor, ref: ReceivingReference, issues: list[Issue]) -> t
     return po, closed
 
 
-def _check_header(f_vendor, f_date, f_by, po: PurchaseOrder | None, today: date, issues: list[Issue]) -> str | None:
+def _check_header(f_vendor, f_date, f_by, po: PurchaseOrder | None, ref: ReceivingReference, today: date,
+                  issues: list[Issue]) -> str | None:
     if po and not f_vendor.empty and fuzz.token_set_ratio(_norm(str(f_vendor.value)), _norm(po.vendor)) < 80:
-        issues.append(Issue(WARN, "VENDOR_MISMATCH", "vendor",
-                            f"Receipt says '{f_vendor.value}' but {po.po_number} is with {po.vendor}.", DESK,
-                            fixes=[_fix(f"Use {po.vendor}", vendor=po.vendor)]))
+        # A block, not a warning: either the PO number is wrong or the goods came from someone else.
+        theirs = _open_pos(ref, str(f_vendor.value), exclude=po.po_number)
+        issues.append(Issue(BLOCK, "VENDOR_MISMATCH", "vendor",
+                            f"Receipt says '{f_vendor.value}' but {po.po_number} is with {po.vendor}. Either the PO "
+                            "number is wrong or this delivery is not from the vendor it was ordered from.", DESK,
+                            [_po_label(p) for p in theirs],
+                            [_fix(f"It is {po.vendor} (name written differently)", vendor=po.vendor)]
+                            + [_fix(f"Change PO to {_po_label(p)}", po_number=p.po_number) for p in theirs]))
     if f_by.unsure:
         issues.append(_review("received_by", f_by))
     elif f_by.empty:
@@ -235,7 +241,7 @@ def validate_receipt(reading: Any, ref: ReceivingReference, today: date | None =
                                           ("receipt_number", "po_number", "vendor", "date", "received_by"))
 
     po, closed = _check_po(f_po, f_vendor, ref, issues)
-    received_on = _check_header(f_vendor, f_date, f_by, po, today, issues)
+    received_on = _check_header(f_vendor, f_date, f_by, po, ref, today, issues)
 
     rn = norm_receipt_no(f_no.value) if not f_no.empty else ""
     duplicate = False
@@ -345,6 +351,24 @@ def validate_receipt(reading: Any, ref: ReceivingReference, today: date | None =
             po_lines.append({"line": pol.line, "part_number": pol.part_number, "description": pol.description,
                              "unit": pol.unit, "ordered": pol.qty_ordered, "received_before": before, "this_receipt": got,
                              "open_after": max(0, open_ - got), "state": state or "-"})
+
+    # Same PO, date and quantities as a receipt already in the history, under another number: the
+    # usual way one delivery gets counted twice. It can be a genuine repeat, so a person decides.
+    counted = [(r["part_number"], r["qty"], r["unit"]) for r in lines if r["counts"]]
+    if po is not None and counted and not duplicate and not unsettled:
+        twin = ref.fingerprints.get(fingerprint(po.po_number, received_on, counted))
+        if twin and twin != rn:
+            if reading.get("separate_delivery"):
+                issues.append(Issue(INFO, "SEPARATE_DELIVERY", "receipt_number",
+                                    f"Same content as {twin}; confirmed as a separate delivery.", DESK))
+            else:
+                seen = ref.known_receipts.get(twin, {})
+                issues.append(Issue(BLOCK, "POSSIBLE_DUPLICATE", "receipt_number",
+                                    f"Same PO, date and quantities as {twin}, already received"
+                                    f"{' (' + seen['source'] + ')' if seen.get('source') else ''}, under a different "
+                                    "receipt number. Receiving it again would count the goods twice.", DESK,
+                                    [f"If it is {twin} again, don't post it."],
+                                    [_fix("A separate delivery: receive it", separate_delivery=True)]))
 
     severities = {i.severity for i in issues}
     status = "BLOCKED" if BLOCK in severities else "READY_WITH_WARNINGS" if WARN in severities else "READY"

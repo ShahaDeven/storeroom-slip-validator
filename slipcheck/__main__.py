@@ -4,6 +4,7 @@
   python -m slipcheck check data/photos/slip_hard_case.jpeg           # mock extraction
   python -m slipcheck check data/photos/slip_hard_case.jpeg --live --save-extraction
   python -m slipcheck demo                                            # every sample, one line each
+  python -m slipcheck adversarial                                     # difficult cases: expected vs actual
   python -m slipcheck serve                                           # web UI at http://127.0.0.1:8000
 """
 
@@ -153,6 +154,14 @@ def cmd_receive(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_adversarial(args: argparse.Namespace) -> int:
+    from slipcheck.adversarial import format_suite, run_suite
+
+    s = run_suite()
+    print(json.dumps(s, indent=2) if args.json else format_suite(s))
+    return 1 if s["counts"]["regression"] else 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -192,6 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--live", action="store_true", help="read an image with the vision model (needs ANTHROPIC_API_KEY)")
     r.add_argument("--json", action="store_true")
     r.set_defaults(fn=cmd_receive)
+    a = sub.add_parser("adversarial", help="run the deliberately difficult cases: expected vs actual outcome")
+    a.add_argument("--json", action="store_true")
+    a.set_defaults(fn=cmd_adversarial)
     s = sub.add_parser("serve", help="start the web UI and API")
     s.add_argument("--port", type=int, default=8000)
     s.set_defaults(fn=cmd_serve)

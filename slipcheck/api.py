@@ -179,6 +179,14 @@ def impact_with(req: ImpactRequest) -> dict:
     return impact_model.impact(ref, overrides=req.likely, detection=_detection())
 
 
+@app.get("/api/adversarial")
+def adversarial_suite() -> dict:
+    """Run every adversarial case now, through the real rules and posting code, in throwaway ledgers."""
+    from slipcheck.adversarial import run_suite
+
+    return run_suite()
+
+
 @app.get("/api/events")
 def audit_trail(limit: int = 100) -> list[dict]:
     """The audit trail: every posting and check, newest first."""
@@ -222,6 +230,8 @@ if DIST.exists():
             raise HTTPException(404, f"No API route /{path}")
         # Only serve real files inside dist/; '..' or encoded slashes must not escape it.
         target = (DIST / path).resolve()
-        if path and target.is_file() and target.is_relative_to(DIST.resolve()):
+        if path and target.is_file() and target.is_relative_to(DIST.resolve()) and target.name != "index.html":
             return FileResponse(target)
-        return FileResponse(DIST / "index.html")
+        # The page names its hashed asset files; a cached copy after a rebuild asks for files that are
+        # gone. Make browsers re-check it every time (the hashed assets themselves can stay cached).
+        return FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})

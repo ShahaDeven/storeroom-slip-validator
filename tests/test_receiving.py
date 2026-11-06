@@ -274,3 +274,45 @@ def test_uploading_a_pdf_reads_its_text_layer_and_rejects_other_files(client):
     assert ok.json()["reading"]["po_number"]["value"] == "PO-26-1102"
     bad = client.post("/api/receiving/extract", files={"file": ("notes.txt", b"x", "text/plain")})
     assert bad.status_code == 422
+
+
+# ------------------------------------------------------------ rules added after the adversarial suite
+
+
+def test_a_vendor_mismatch_blocks_and_offers_the_way_out(ref):
+    reading = read_receipt(RECEIPTS / "R01.pdf")
+    reading["vendor"] = {"value": "Calder Industrial", "confidence": 1.0}
+    r = validate_receipt(reading, ref, TODAY)
+    iss = issue(r, "VENDOR_MISMATCH")
+    assert iss.severity == "block" and r.status == "BLOCKED"
+    assert any("PO-26-1103" in f["label"] for f in iss.fixes)  # Calder's own open POs are offered
+    fixed = validate_receipt(apply_fix(reading, iss, fix_labelled(iss, "written differently")), ref, TODAY)
+    assert "VENDOR_MISMATCH" not in codes(fixed) and fixed.status == "READY"
+
+
+def test_a_vendor_name_written_differently_is_not_a_mismatch(ref):
+    reading = read_receipt(RECEIPTS / "R01.pdf")
+    reading["vendor"] = {"value": "Northline Supply Co.", "confidence": 1.0}
+    assert "VENDOR_MISMATCH" not in codes(validate_receipt(reading, ref, TODAY))
+
+
+def test_same_content_under_a_new_receipt_number_is_a_possible_duplicate(client):
+    first = read_receipt(RECEIPTS / "R02.pdf")
+    assert post(client, "R02.pdf", first).status_code == 200
+    again = read_receipt(RECEIPTS / "R02.pdf")
+    again["receipt_number"] = {"value": "R-20999", "confidence": 1.0}
+    again["items"] = [again["items"][1]]  # only the 15A line, so the quantity alone still fits what is open
+    again["items"][0]["qty"] = {"value": "12", "confidence": 1.0}
+    r = client.post("/api/receiving/validate", json={"receipt": again}).json()
+    assert "POSSIBLE_DUPLICATE" not in [i["code"] for i in r["issues"]]  # different content: no alarm
+
+    twin = read_receipt(RECEIPTS / "R02.pdf")
+    twin["receipt_number"] = {"value": "R-20999", "confidence": 1.0}
+    ref2 = load_receiving(posted=[{"receipt_number": "R-20102", "po_number": "PO-26-1102", "received_on": "2026-10-26",
+                                   "lines": [{"part_number": "EL-2011", "qty": 18, "unit": "EA"}]}])
+    single = dict(twin, items=[twin["items"][1]])
+    rep = validate_receipt(single, ref2, TODAY)
+    iss = issue(rep, "POSSIBLE_DUPLICATE")
+    assert iss.severity == "block" and "R-20102" in iss.message
+    confirmed = validate_receipt(apply_fix(single, iss, iss.fixes[0]), ref2, TODAY)
+    assert "POSSIBLE_DUPLICATE" not in codes(confirmed) and "SEPARATE_DELIVERY" in codes(confirmed)

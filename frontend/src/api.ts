@@ -1,5 +1,5 @@
 import type {
-  DataView, Impact, Meta, Posting, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Report, Sample,
+  AdvSuite, DataView, Impact, Meta, Posting, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Report, Sample,
   SampleData, ShiftLog, Slip,
 } from './types'
 
@@ -48,6 +48,8 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ likely }),
     }).then(json<Impact>),
+  /** Runs every adversarial case now, server-side, in throwaway ledgers. */
+  adversarial: () => fetch('/api/adversarial').then(json<AdvSuite>),
   clearShiftLog: () => fetch('/api/ledger/reset', { method: 'POST' }).then(json<ShiftLog>),
   events: () => fetch('/api/events').then(json<{ id: number; at: string; kind: string; subject: string; detail: Record<string, unknown> }[]>),
   receiving: {

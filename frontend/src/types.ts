@@ -267,3 +267,35 @@ export interface ReceivingSummary {
     lines: { line: number; part_number: string; description: string; unit: string; ordered: number; received: number; open: number }[]
   }[]
 }
+
+// ------------------------------------------------------------ adversarial suite
+
+export type AdvOutcome = 'posted' | 'posted_with_warnings' | 'blocked' | 'needs_review' | 'refused'
+export type AdvVerdict = 'as_expected' | 'known_gap' | 'regression'
+
+export interface AdvCase {
+  id: string
+  area: 'receiving' | 'slips'
+  title: string
+  attempt: string
+  expect: AdvOutcome
+  expect_codes: string[]
+  why: string
+  known_gap: string | null
+  history: string | null
+  setup: { say: string; outcome: AdvOutcome }[]
+  attempt_step: string
+  actual: { outcome: AdvOutcome; status: string | null; codes: string[]; message: string | null }
+  verdict: AdvVerdict
+  got_in: boolean
+}
+
+export interface AdvSuite {
+  ran_at: string
+  today: string
+  ms: number
+  total: number
+  counts: Record<AdvVerdict, number>
+  got_in: number
+  cases: AdvCase[]
+}

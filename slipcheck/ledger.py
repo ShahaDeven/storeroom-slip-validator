@@ -12,7 +12,8 @@ import hashlib
 import json
 import os
 import sqlite3
-from contextlib import closing
+from contextlib import closing, contextmanager
+from contextvars import ContextVar
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
@@ -80,8 +81,23 @@ class NotPostable(Exception):
     pass
 
 
+# Set only inside scratch_db(): a context variable, so a suite run inside the server
+# never redirects another request's writes.
+_SCRATCH: ContextVar[Path | None] = ContextVar("slipcheck_scratch_db", default=None)
+
+
 def db_path() -> Path:
-    return Path(os.environ.get("SLIPCHECK_DB") or DATA_DIR / "runtime" / "ledger.db")
+    return _SCRATCH.get() or Path(os.environ.get("SLIPCHECK_DB") or DATA_DIR / "runtime" / "ledger.db")
+
+
+@contextmanager
+def scratch_db(path: Path):
+    """Point this context's ledger at a throwaway file (the adversarial suite uses one per case)."""
+    token = _SCRATCH.set(Path(path))
+    try:
+        yield
+    finally:
+        _SCRATCH.reset(token)
 
 
 def _connect() -> sqlite3.Connection:

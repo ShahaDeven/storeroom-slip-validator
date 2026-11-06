@@ -181,3 +181,33 @@ def test_heldout_runs_once(tmp_path, monkeypatch):
     monkeypatch.setattr(ev, "LOCK", lock)
     with pytest.raises(ev.EvalRefused, match="already run"):
         ev.run("heldout", confirm_frozen=True)
+
+
+# ------------------------------------------------------------ corrections found after a locked run
+
+
+def test_photo_swap_maps_each_slip_to_the_photo_that_shows_it():
+    c = {"photo_swaps": [{"slips": ["H02", "H03"]}]}
+    assert ev.photo_for("H02", c) == "H03" and ev.photo_for("H03", c) == "H02"
+    assert ev.photo_for("H04", c) == "H04" and ev.photo_for("H02", {}) == "H02"
+
+
+def test_corrected_rescoring_needs_a_locked_run_first(tmp_path, monkeypatch):
+    monkeypatch.setattr(ev, "LOCK", tmp_path / "no_lock.json")
+    with pytest.raises(ev.EvalRefused, match="Run the held-out set first"):
+        ev.run("heldout", corrected=True)
+
+
+def test_corrected_rescoring_needs_recorded_corrections(tmp_path, monkeypatch):
+    lock = tmp_path / "lock.json"
+    lock.write_text("{}")
+    monkeypatch.setattr(ev, "LOCK", lock)
+    monkeypatch.setattr(ev, "CORRECTIONS", tmp_path / "missing.json")
+    with pytest.raises(ev.EvalRefused, match="No corrections recorded"):
+        ev.run("heldout", corrected=True)
+
+
+def test_the_recorded_corrections_file_is_well_formed():
+    c = ev.load_corrections()
+    assert [s["slips"] for s in c["photo_swaps"]] == [["H02", "H03"]]
+    assert all({"slip", "field", "action"} <= set(e) for e in c["label_errors"])

@@ -1,0 +1,257 @@
+{
+  "wo_number": {
+    "value": "WO-26-0441",
+    "raw": "WO-26-0441",
+    "confidence": 0.9,
+    "source": {
+      "document": "H05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/26/26",
+    "raw": "10/26 126",
+    "confidence": 0.8,
+    "source": {
+      "document": "H05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "H. Santos",
+    "raw": "H. Santos",
+    "confidence": 0.95,
+    "source": {
+      "document": "H05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "Hale Administration",
+    "raw": "Hale Administration",
+    "confidence": 0.95,
+    "source": {
+      "document": "H05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "H05.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "HV-3050",
+        "raw": "HV-3050",
+        "confidence": 0.9,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "30a contactor",
+        "raw": "30a contactor",
+        "confidence": 0.85,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "1",
+        "raw": "1",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "EL-2051",
+        "raw": "EL-2051",
+        "confidence": 0.9,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 2
+        }
+      },
+      "part_name": {
+        "value": "three way switch",
+        "raw": "three way switch",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 2
+        }
+      },
+      "qty": {
+        "value": "5",
+        "raw": "5",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 2
+        }
+      },
+      "unit": {
+        "value": "ea",
+        "raw": "ea",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 2
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "HV-3002",
+        "raw": "HV-3002",
+        "confidence": 0.9,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 3
+        }
+      },
+      "part_name": {
+        "value": "24x24 filter",
+        "raw": "24x24 filter",
+        "confidence": 0.9,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 3
+        }
+      },
+      "qty": {
+        "value": "2",
+        "raw": "2",
+        "confidence": 0.95,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 3
+        }
+      },
+      "unit": {
+        "value": "box",
+        "raw": "box",
+        "confidence": 0.85,
+        "source": {
+          "document": "H05.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 3
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "H05.jpeg",
+    "extracted_on": "2026-11-06",
+    "usage": {
+      "input_tokens": 1359,
+      "output_tokens": 1180
+    }
+  }
+}

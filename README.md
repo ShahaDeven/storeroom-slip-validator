@@ -71,6 +71,7 @@ python -m slipcheck impact                                     # estimated manua
 python -m slipcheck receive demo                               # every sample delivery receipt, one line each
 python -m slipcheck receive data/receiving/receipts/R03.pdf    # one receipt in full (over-shipment)
 python -m slipcheck eval --split dev                           # evaluation of photo reading + rules (see EVAL below)
+python -m slipcheck eval --split heldout --corrected          # held-out result with the recorded correction (no API calls)
 
 python -m slipcheck check data/photos/slip_hard_case.jpeg                    # photo, cached reading (no key)
 python -m slipcheck check data/photos/slip_hard_case.jpeg --live             # photo, read live (ANTHROPIC_API_KEY)
@@ -266,10 +267,19 @@ written by **one writer in four deliberate styles**. The held-out set is run onc
 are frozen and committed (`--split heldout --confirm-frozen`; it refuses to run twice or with
 uncommitted changes).
 
-Development results (10 slips, Claude Haiku, 2026-11-04): 107 of 116 fields read correctly; **0 of
-10 slips had a critical misread that went uncaught**; every misread had confidence below 0.90,
-and all 89 fields at 0.90 or above were correct. Ten slips is a first look, not a measurement:
-the interval on "none uncaught" runs up to 28%. Held-out results: not yet run.
+Held-out results (20 slips, run once after the freeze, corrected for one verified photo-naming
+error; the locked numbers are reported alongside in [EVAL.md](EVAL.md)):
+
+| | Held-out |
+|---|---|
+| Critical fields read correctly | 140/149 (94%) |
+| Slips with a critical misread that went unnoticed | **0/20** (95% upper bound 16%) |
+| Fields read at confidence 0.90 or above that were still wrong | 6/146 |
+| Slips needing a person to confirm a field | 15/20 (75%) |
+
+The model's confidence alone did not catch every misread; the rules and review did. The price is
+review load. Full method, definitions, the correction and its evidence, and limits (one writer,
+30 slips) are in [EVAL.md](EVAL.md).
 
 ## Implemented / mocked / deferred
 

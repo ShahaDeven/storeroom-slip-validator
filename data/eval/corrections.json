@@ -1,0 +1,20 @@
+{
+  "_note": "Data-handling errors found AFTER the held-out run was locked (commit 86a55af95d, 2026-11-06). They are applied only by `python -m slipcheck eval --split heldout --corrected`, which re-scores the cached readings with no new API calls and writes results_heldout_corrected.json. The locked results_heldout.json and .heldout_run.json are left exactly as recorded. No rule, threshold or label was changed.",
+  "photo_swaps": [
+    {
+      "slips": ["H02", "H03"],
+      "what": "The two photos were saved under each other's names: H02.jpeg shows the H03 slip and H03.jpeg shows the H02 slip.",
+      "evidence": "Checked by eye on 2026-11-06: H02.jpeg reads WO-26-0481, S. Whitfield, GN-4002 gloves medium, EL-2070 black wire (the H03 row of labels.csv); H03.jpeg reads WO-26-0386, H. Santos, JN-5001 trash bags, EL-2020 gfci outlet (the H02 row). The locked run's misreads on these two slips are each other's labels, field for field.",
+      "effect": "All 10 'critical, not caught' misreads in the locked run come from this swap."
+    }
+  ],
+  "label_errors": [
+    {
+      "slip": "H03",
+      "field": "signature",
+      "label_says": "yes",
+      "paper_says": "no signature",
+      "action": "Not changed. Reported: the model's reading ('no') is correct, and the MISSING_SIGNATURE rule flagged it, so it is counted as a caught misread that is really a correct read."
+    }
+  ]
+}

@@ -47,6 +47,7 @@ EVAL_DIR = DATA_DIR / "eval"
 LABELS = EVAL_DIR / "labels.csv"
 READINGS = EVAL_DIR / "readings"
 LOCK = EVAL_DIR / ".heldout_run.json"
+CORRECTIONS = EVAL_DIR / "corrections.json"  # data-handling errors found after a run, applied only with --corrected
 
 HEADER = ("wo_number", "date", "taken_by", "location", "signature")
 ITEM = ("part_number", "part_name", "qty", "unit")
@@ -149,6 +150,20 @@ def load_reading(row: dict, live: bool, budget: Budget) -> tuple[dict | None, st
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return data, "live"
+
+
+def load_corrections(path: Path | None = None) -> dict:
+    path = path or CORRECTIONS
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def photo_for(slip_id: str, corrections: dict) -> str:
+    """Which slip's photo (and reading) actually shows this slip, after any recorded swaps."""
+    for swap in corrections.get("photo_swaps", []):
+        a, b = swap["slips"]
+        if slip_id in (a, b):
+            return b if slip_id == a else a
+    return slip_id
 
 
 # ---------------------------------------------------------------- comparing one slip
@@ -364,11 +379,20 @@ class EvalRefused(RuntimeError):
 
 
 def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_frozen: bool = False,
-        rerun: bool = False, ref: Reference | None = None) -> dict:
+        rerun: bool = False, ref: Reference | None = None, corrected: bool = False) -> dict:
+    """corrected=True re-scores the CACHED readings with data/eval/corrections.json applied (no API
+    calls, no lock, a separate results file). The locked results are never touched."""
     ref = ref or load_reference()
     commit = _git("rev-parse", "HEAD")
     dirty = bool(_git("status", "--porcelain", "--untracked-files=no"))
-    if split == "heldout" and not rerun:
+    corrections = load_corrections() if corrected else {}
+    if corrected:
+        if split == "heldout" and not LOCK.exists():
+            raise EvalRefused("Corrections apply to a run that already happened. Run the held-out set first.")
+        if not corrections:
+            raise EvalRefused(f"No corrections recorded ({CORRECTIONS.name} is missing or empty).")
+        live = False
+    elif split == "heldout" and not rerun:
         if not confirm_frozen:
             raise EvalRefused("The held-out set is run once, after the rules and thresholds are frozen. "
                               "Pass --confirm-frozen to say that is true.")
@@ -380,10 +404,12 @@ def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_fro
                               "commit hash recorded with the results is the code that was evaluated.")
 
     rows = load_labels(split)
+    by_id = {r["slip_id"]: r for r in rows}
     budget = Budget(max_calls)
     results, missing, tokens = [], [], {"input": 0, "output": 0, "readings": 0}
     for row in rows:
-        reading, status = load_reading(row, live, budget)
+        source = by_id.get(photo_for(row["slip_id"], corrections), row)  # the row whose photo shows this slip
+        reading, status = load_reading(source, live, budget)
         if reading is None:
             missing.append({"slip": row["slip_id"], "why": status})
             continue
@@ -401,6 +427,12 @@ def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_fro
         "slips": [asdict(r) | {"fields": [asdict(f) for f in r.fields]} for r in results],
     }
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    if corrected:
+        report["split"] = f"{split} (corrected: see {CORRECTIONS.name})"
+        report["corrections"] = corrections
+        report["locked_run"] = json.loads(LOCK.read_text(encoding="utf-8")) if LOCK.exists() else None
+        (EVAL_DIR / f"results_{split}_corrected.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return report
     (EVAL_DIR / f"results_{split}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if split == "heldout" and not rerun:
         LOCK.write_text(json.dumps({"commit": commit, "run_at": report["run_at"], "slips": len(results)}, indent=2) + "\n",

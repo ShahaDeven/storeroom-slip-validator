@@ -1,0 +1,141 @@
+{
+  "wo_number": {
+    "value": "Wo-26-0431",
+    "raw": "Wo-26-0431",
+    "confidence": 0.8,
+    "source": {
+      "document": "H10.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/20/26",
+    "raw": "10/20/26",
+    "confidence": 0.85,
+    "source": {
+      "document": "H10.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "D. Pryor",
+    "raw": "D. Pryor",
+    "confidence": 0.9,
+    "source": {
+      "document": "H10.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "Marsh dining hall",
+    "raw": "Marsh dining hall",
+    "confidence": 0.9,
+    "source": {
+      "document": "H10.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "H10.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "JN 5003",
+        "raw": "JN 5003",
+        "confidence": 0.6,
+        "source": {
+          "document": "H10.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "tp",
+        "raw": "tp",
+        "confidence": 0.6,
+        "source": {
+          "document": "H10.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "32",
+        "raw": "32",
+        "confidence": 0.9,
+        "source": {
+          "document": "H10.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "roll",
+        "raw": "roll",
+        "confidence": 0.9,
+        "source": {
+          "document": "H10.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "H10.jpeg",
+    "extracted_on": "2026-11-06",
+    "usage": {
+      "input_tokens": 1961,
+      "output_tokens": 718
+    }
+  }
+}

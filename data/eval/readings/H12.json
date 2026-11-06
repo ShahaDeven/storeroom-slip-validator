@@ -1,0 +1,141 @@
+{
+  "wo_number": {
+    "value": "Wo-26-0412",
+    "raw": "Wo-26-0412",
+    "confidence": 0.9,
+    "source": {
+      "document": "H12.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/18/26",
+    "raw": "10/18/26",
+    "confidence": 0.85,
+    "source": {
+      "document": "H12.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "M. ORTIZ",
+    "raw": "M. ORTIZ",
+    "confidence": 0.9,
+    "source": {
+      "document": "H12.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "HARLOW HALL",
+    "raw": "HARLOW HALL",
+    "confidence": 0.9,
+    "source": {
+      "document": "H12.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "H12.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "GN-4002",
+        "raw": "GN-4002",
+        "confidence": 0.85,
+        "source": {
+          "document": "H12.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "LEATHER GLOVES M",
+        "raw": "LEATHER GLOVES M",
+        "confidence": 0.9,
+        "source": {
+          "document": "H12.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "2",
+        "raw": "2",
+        "confidence": 0.95,
+        "source": {
+          "document": "H12.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": null,
+        "raw": "",
+        "confidence": 1.0,
+        "source": {
+          "document": "H12.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "H12.jpeg",
+    "extracted_on": "2026-11-06",
+    "usage": {
+      "input_tokens": 1681,
+      "output_tokens": 916
+    }
+  }
+}

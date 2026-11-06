@@ -1,0 +1,199 @@
+{
+  "wo_number": {
+    "value": "WO-26-0401",
+    "raw": "WO-26-0401",
+    "confidence": 0.85,
+    "source": {
+      "document": "H14.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "wo_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/07/26",
+    "raw": "10/07/26",
+    "confidence": 0.85,
+    "source": {
+      "document": "H14.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "taken_by": {
+    "value": "T. NOVAK",
+    "raw": "T. NOVAK",
+    "confidence": 0.8,
+    "source": {
+      "document": "H14.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "taken_by",
+      "line": null
+    }
+  },
+  "location": {
+    "value": "KNOX MALL",
+    "raw": "KNOX MALL",
+    "confidence": 0.9,
+    "source": {
+      "document": "H14.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "location",
+      "line": null
+    }
+  },
+  "signature": {
+    "value": true,
+    "confidence": 0.9,
+    "source": {
+      "document": "H14.jpeg",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-06",
+      "review_status": "unreviewed",
+      "field": "signature",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "PL-1001",
+        "raw": "PL-1001",
+        "confidence": 0.9,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "3/4 PVC 90",
+        "raw": "3/4 PVC 90",
+        "confidence": 0.85,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": "11",
+        "raw": "11",
+        "confidence": 0.7,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "EA",
+        "raw": "EA",
+        "confidence": 0.85,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    },
+    {
+      "part_number": {
+        "value": "PL-1002",
+        "raw": "PL-1002",
+        "confidence": 0.9,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 2
+        }
+      },
+      "part_name": {
+        "value": "1/2 ELBOW",
+        "raw": "1/2 ELBOW",
+        "confidence": 0.85,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 2
+        }
+      },
+      "qty": {
+        "value": "7",
+        "raw": "7",
+        "confidence": 0.85,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 2
+        }
+      },
+      "unit": {
+        "value": "EA",
+        "raw": "EA",
+        "confidence": 0.85,
+        "source": {
+          "document": "H14.jpeg",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-06",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 2
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "H14.jpeg",
+    "extracted_on": "2026-11-06",
+    "usage": {
+      "input_tokens": 1497,
+      "output_tokens": 893
+    }
+  }
+}

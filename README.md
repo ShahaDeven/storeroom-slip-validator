@@ -48,6 +48,7 @@ testable, and explainable to a supervisor or an auditor.
 | Tab | What it shows |
 |---|---|
 | **Counter** | The slip drawn as the paper copy, problems marked next to each field, a HOLD / READY TO POST stamp, and the questions to ask the crew with one-click answers. Answering re-checks the slip; corrections appear over the struck-through original. Drop in your own photo or JSON slip on the left. |
+| **Receiving** | A delivery receipt checked against its purchase order. The page is shown with each problem's real word box drawn on it (PDF text layer; images read by the vision model get no invented boxes). Over-shipments, pack-size questions, unordered items, duplicates and closed POs block with one-click decisions (receive the open amount, accept, return to vendor, hold for the buyer); a short delivery is a partial, not a failure, and the PO line stays open. |
 | **Shift log** | What was posted (W/O, location, parts, aisles, answers given at the counter), what is on hold and why, slips waiting on a handwriting check, problems caught before the count, stock after posting, and **Download for accounting (CSV)**: one row per posted part with the cause of every correction. |
 | **Data** | Every part with start, posted and on-hand (low stock flagged), every work order with what was issued against it, and a feed of stock changes. Rows changed by the latest posting are highlighted; refreshes every few seconds. |
 | **Impact (estimated)** | Manual vs with the check, with a slider for every input tagged Observed or Assumed and the break-even marked. See [Is it worth it?](#is-it-worth-it-estimated). |
@@ -67,6 +68,9 @@ python -m slipcheck check data/slips/10_hard_case.json         # difficult case
 python -m slipcheck check data/slips/12_truncated.json         # invalid input -> rejected, exit 2
 python -m slipcheck check data/slips/10_hard_case.json --json  # machine-readable report
 python -m slipcheck impact                                     # estimated manual vs checked comparison
+python -m slipcheck receive demo                               # every sample delivery receipt, one line each
+python -m slipcheck receive data/receiving/receipts/R03.pdf    # one receipt in full (over-shipment)
+python -m slipcheck eval --split dev                           # evaluation of photo reading + rules (see EVAL below)
 
 python -m slipcheck check data/photos/slip_hard_case.jpeg                    # photo, cached reading (no key)
 python -m slipcheck check data/photos/slip_hard_case.jpeg --live             # photo, read live (ANTHROPIC_API_KEY)
@@ -94,6 +98,10 @@ cent each. The key can go in a `.env` file in the project folder.
 | `data/slips/*.json` | 20 slips as a clerk would type them: clean pulls, one per failure mode, a multi-line weekly pull |
 | `data/photos/` | two handwritten slips, photographed (see `WHAT_TO_WRITE.md`) |
 | `data/extractions/*.json` | the cached Claude readings of those photos, replayed in mock mode |
+| `data/receiving/purchase_orders.csv` | 12 purchase orders from 3 invented vendors: the system of record for receiving |
+| `data/receiving/receipts_seed.csv` | deliveries already received before the demo (so partial and closed POs exist) |
+| `data/receiving/receipts/` | 12 digital delivery-receipt PDFs (one per scenario, see `scenarios.csv`) and one image receipt for the vision path |
+| `data/eval/` | the evaluation set: `WRITE_THESE.md`, `labels.csv` (what each handwritten slip says), photos and cached readings |
 | `data/impact_assumptions.json` | inputs to the impact estimate, each tagged observed / assumed / unknown |
 | `forms/checkout_slip.html` | printable blank slip (optional; a hand-drawn slip works too) |
 
@@ -224,6 +232,45 @@ or write-off value.
 
 </details>
 
+## Receiving: delivery receipt vs purchase order
+
+The same pattern on the other side of the storeroom door. Must-have rules, all implemented:
+
+| Problem on the receipt | What happens |
+|---|---|
+| PO line not on this delivery | warning; the line stays open |
+| Fewer than ordered | **partial delivery** warning, not a failure; remaining quantity stays open |
+| More than still open | block: receive the open amount and return the rest, accept the over-shipment, or return to vendor |
+| Pieces vs boxes / pairs | converted when exact (1,000 ea = 10 boxes of 100); otherwise a question with the readings to choose from |
+| Item not on the PO | block: change to the PO line it most resembles (never one already on the receipt), return, or hold for the buyer |
+| Receipt number already received | block (duplicate); the over-shipment it would also cause is not reported twice |
+| PO closed or fully received | block, with the vendor's open POs as options |
+| PO number not in the system | block, with look-alike numbers from the same vendor |
+| Nobody named as received by | block; type the name |
+
+Price variance is deliberately not checked: these receipts confirm quantities, not prices, which
+belong to a later invoice match. Posting raises each PO line's received-to-date (mocked, local
+SQLite) and every check and posting lands in an audit trail (`GET /api/events`). Receiving does
+not yet change on-hand stock in the Data tab.
+
+## Evaluation (exploratory)
+
+`python -m slipcheck eval` runs the real validator twice per labelled handwritten slip, on the
+true transcription and on the model's reading, and reports what the model's mistakes cost:
+read correctly, misread but caught (low-confidence review, a new rule flag, or a block that makes
+a person decide that field anyway), misread and not caught, or a minor unflagged misread. It also
+reports confidence against observed correctness, with Wilson intervals.
+
+Protocol: 10 development slips (thresholds may be tuned here, `--sweep`) and 20 held-out slips,
+written by **one writer in four deliberate styles**. The held-out set is run once, after the rules
+are frozen and committed (`--split heldout --confirm-frozen`; it refuses to run twice or with
+uncommitted changes).
+
+Development results (10 slips, Claude Haiku, 2026-11-04): 107 of 116 fields read correctly; **0 of
+10 slips had a critical misread that went uncaught**; every misread had confidence below 0.90,
+and all 89 fields at 0.90 or above were correct. Ten slips is a first look, not a measurement:
+the interval on "none uncaught" runs up to 28%. Held-out results: not yet run.
+
 ## Implemented / mocked / deferred
 
 | | |
@@ -272,7 +319,7 @@ output:
 2. **How soon slips are actually entered.** Catching errors "while the crew is reachable" assumes same-day entry; batch entry at week's end shrinks the benefit.
 3. Error frequency by type on real slips, to decide which checks earn their place.
 4. Photo-reading accuracy on 50+ real handwritten slips, and where to set the review threshold.
-5. **The same check on the receiving side.** Vendor documents were already reviewed within 1-2 days; reading them automatically and matching them to the order and to what was put away is the same pattern.
+5. **Three-way match.** Receiving now checks receipt against PO; adding the vendor invoice (prices) completes the match accounts payable relies on.
 
 ---
 

@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from slipcheck import impact as impact_model
 from slipcheck import ledger
 from slipcheck.extract import LIVE_MODEL, ExtractionError, extract
+from slipcheck.receiving.api import router as receiving_router
 from slipcheck.reference import DATA_DIR, load_reference
 from slipcheck.validate import InvalidSlip, Report, validate
 
@@ -32,6 +33,7 @@ SLIPS_DIR, PHOTOS_DIR = DATA_DIR / "slips", DATA_DIR / "photos"
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 app = FastAPI(title="slipcheck")
+app.include_router(receiving_router)
 ref = load_reference()
 
 
@@ -175,6 +177,12 @@ def impact_defaults() -> dict:
 def impact_with(req: ImpactRequest) -> dict:
     """Same, with the 'likely' inputs replaced by the UI's slider values."""
     return impact_model.impact(ref, overrides=req.likely, detection=_detection())
+
+
+@app.get("/api/events")
+def audit_trail(limit: int = 100) -> list[dict]:
+    """The audit trail: every posting and check, newest first."""
+    return ledger.recent_events(min(max(limit, 1), 500))
 
 
 @app.get("/api/data")

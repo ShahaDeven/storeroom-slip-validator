@@ -39,6 +39,34 @@ CREATE TABLE IF NOT EXISTS postings (
     lines TEXT NOT NULL,         -- JSON [{part_number, name, aisle, qty, unit}]
     answers TEXT NOT NULL        -- JSON [str]: what the clerk resolved at the counter
 );
+CREATE TABLE IF NOT EXISTS receipts (          -- delivery receipts posted against purchase orders
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    receipt_number TEXT NOT NULL,
+    po_number TEXT NOT NULL,
+    fingerprint TEXT NOT NULL,
+    posted_at TEXT NOT NULL,
+    received_on TEXT, received_by TEXT, vendor TEXT,
+    lines TEXT NOT NULL,         -- JSON [{part_number, qty, unit}] in the PO's unit; only lines that count
+    held TEXT NOT NULL,          -- JSON [str]: lines returned to the vendor or held for the buyer
+    answers TEXT NOT NULL        -- JSON [str]: what the clerk resolved before posting
+);
+CREATE TABLE IF NOT EXISTS receipt_checks (
+    name TEXT PRIMARY KEY,
+    first_seen TEXT NOT NULL,
+    last_seen TEXT NOT NULL,
+    first_codes TEXT NOT NULL,   -- JSON [[severity, code], ...] at the first check
+    status TEXT NOT NULL,
+    open_codes TEXT NOT NULL,
+    po_number TEXT, receipt_number TEXT
+);
+CREATE TABLE IF NOT EXISTS events (            -- the audit trail: what happened, to what, and when
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    detail TEXT NOT NULL         -- JSON
+);
 """
 
 
@@ -124,6 +152,8 @@ def post(name: str, report: Report, answers: list[str]) -> dict:
              report.location, report.slip_date, json.dumps(lines), json.dumps(answers)),
         )
         row = conn.execute("SELECT * FROM postings WHERE id = ?", (cur.lastrowid,)).fetchone()
+    log_event("slip_posted", name, {"entry": row["id"], "wo_number": report.wo_number, "taken_by": report.taken_by,
+                                    "parts": len(lines), "answers": answers})
     return _posting(row)
 
 
@@ -267,7 +297,20 @@ def export_rows() -> list[dict]:
     return rows
 
 
+def log_event(kind: str, subject: str, detail: dict | None = None) -> None:
+    """Append to the audit trail: one row per step, with a timestamp."""
+    with closing(_connect()) as conn, conn:
+        conn.execute("INSERT INTO events (at, kind, subject, detail) VALUES (?, ?, ?, ?)",
+                     (_now(), kind, subject, json.dumps(detail or {})))
+
+
+def recent_events(limit: int = 100) -> list[dict]:
+    with closing(_connect()) as conn:
+        rows = conn.execute("SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    return [dict(r) | {"detail": json.loads(r["detail"])} for r in rows]
+
+
 def reset() -> None:
     with closing(_connect()) as conn, conn:
-        conn.execute("DELETE FROM checks")
-        conn.execute("DELETE FROM postings")
+        for table in ("checks", "postings", "receipts", "receipt_checks", "events"):
+            conn.execute(f"DELETE FROM {table}")

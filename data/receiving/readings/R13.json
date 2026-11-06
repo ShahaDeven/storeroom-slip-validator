@@ -1,0 +1,142 @@
+{
+  "receipt_number": {
+    "value": "R-20113",
+    "raw": "R-20113",
+    "confidence": 0.98,
+    "source": {
+      "document": "R13.png",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "receipt_number",
+      "line": null
+    }
+  },
+  "po_number": {
+    "value": "PO-26-1112",
+    "raw": "PO-26-1112",
+    "confidence": 0.98,
+    "source": {
+      "document": "R13.png",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "po_number",
+      "line": null
+    }
+  },
+  "date": {
+    "value": "10/29/26",
+    "raw": "10/29/26",
+    "confidence": 0.97,
+    "source": {
+      "document": "R13.png",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "date",
+      "line": null
+    }
+  },
+  "vendor": {
+    "value": "Calder Industrial",
+    "raw": "Calder Industrial",
+    "confidence": 0.99,
+    "source": {
+      "document": "R13.png",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "vendor",
+      "line": null
+    }
+  },
+  "received_by": {
+    "value": "R. Malik",
+    "raw": "R. Malik",
+    "confidence": 0.97,
+    "source": {
+      "document": "R13.png",
+      "method": "vision",
+      "model": "claude-haiku-5-5",
+      "extracted_at": "2026-11-04",
+      "review_status": "unreviewed",
+      "field": "received_by",
+      "line": null
+    }
+  },
+  "items": [
+    {
+      "part_number": {
+        "value": "GN-4001",
+        "raw": "GN-4001",
+        "confidence": 0.98,
+        "source": {
+          "document": "R13.png",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_number",
+          "line": 1
+        }
+      },
+      "part_name": {
+        "value": "leather gloves l",
+        "raw": "leather gloves l",
+        "confidence": 0.95,
+        "source": {
+          "document": "R13.png",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "part_name",
+          "line": 1
+        }
+      },
+      "qty": {
+        "value": 10,
+        "raw": "10",
+        "confidence": 0.98,
+        "source": {
+          "document": "R13.png",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "qty",
+          "line": 1
+        }
+      },
+      "unit": {
+        "value": "pr",
+        "raw": "pr",
+        "confidence": 0.95,
+        "source": {
+          "document": "R13.png",
+          "method": "vision",
+          "model": "claude-haiku-5-5",
+          "extracted_at": "2026-11-04",
+          "review_status": "unreviewed",
+          "field": "unit",
+          "line": 1
+        }
+      }
+    }
+  ],
+  "_provenance": {
+    "kind": "live model output",
+    "model": "claude-haiku-5-5",
+    "photo": "R13.png",
+    "extracted_on": "2026-11-04",
+    "usage": {
+      "input_tokens": 2844,
+      "output_tokens": 344
+    }
+  }
+}

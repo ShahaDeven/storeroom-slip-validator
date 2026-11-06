@@ -1,4 +1,7 @@
-import type { DataView, Impact, Meta, Posting, Report, Sample, SampleData, ShiftLog, Slip } from './types'
+import type {
+  DataView, Impact, Meta, Posting, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Report, Sample,
+  SampleData, ShiftLog, Slip,
+} from './types'
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -46,6 +49,27 @@ export const api = {
       body: JSON.stringify({ likely }),
     }).then(json<Impact>),
   clearShiftLog: () => fetch('/api/ledger/reset', { method: 'POST' }).then(json<ShiftLog>),
+  events: () => fetch('/api/events').then(json<{ id: number; at: string; kind: string; subject: string; detail: Record<string, unknown> }[]>),
+  receiving: {
+    samples: () => fetch('/api/receiving/samples').then(json<ReceiptSample[]>),
+    sample: (id: string) =>
+      fetch(`/api/receiving/samples/${encodeURIComponent(id)}`).then(json<{ reading: Slip; document: string; kind: 'pdf' | 'image' }>),
+    /** With a name, the check is recorded for the receiving summary. */
+    validate: (receipt: Slip, name: string | null, signal?: AbortSignal) =>
+      fetch('/api/receiving/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt, name }),
+        signal,
+      }).then(json<ReceivingReport>),
+    post: (receipt: Slip, name: string, answers: string[]) =>
+      fetch('/api/receiving/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt, name, answers }),
+      }).then(json<ReceiptPosting>),
+    summary: () => fetch('/api/receiving/summary').then(json<ReceivingSummary>),
+  },
   extract: (file: File, live: boolean) => {
     const form = new FormData()
     form.append('file', file)

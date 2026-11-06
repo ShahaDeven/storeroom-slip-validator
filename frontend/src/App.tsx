@@ -3,6 +3,7 @@ import { api } from './api'
 import { Counter } from './components/Counter'
 import { DataView } from './components/DataView'
 import { ImpactView } from './components/ImpactView'
+import { ReceivingView } from './components/ReceivingView'
 import { Inbox, titleOf } from './components/Inbox'
 import { ShiftLog } from './components/ShiftLog'
 import { SlipPaper } from './components/SlipPaper'
@@ -15,7 +16,7 @@ interface Loaded {
   photo: string | null
 }
 
-type View = 'counter' | 'log' | 'data' | 'impact'
+type View = 'counter' | 'receiving' | 'log' | 'data' | 'impact'
 
 export default function App() {
   const [view, setView] = useState<View>('counter')
@@ -208,10 +209,11 @@ export default function App() {
       </header>
 
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-rail/60">
-        <div role="tablist" aria-label="View" className="flex gap-1">
+        <div role="tablist" aria-label="View" className="flex max-w-full gap-1 overflow-x-auto">
           {(
             [
               ['counter', 'Counter'],
+              ['receiving', 'Receiving'],
               ['log', 'Shift log'],
               ['data', 'Data'],
               ['impact', 'Impact (estimated)'],
@@ -226,7 +228,7 @@ export default function App() {
                 setView(v)
                 if (v === 'log') refreshLog()
               }}
-              className={`-mb-px cursor-pointer border-b-[3px] px-3 pt-1 pb-2 font-cond text-lg font-semibold ${
+              className={`-mb-px shrink-0 cursor-pointer border-b-[3px] px-3 pt-1 pb-2 font-cond text-lg font-semibold whitespace-nowrap ${
                 view === v ? 'border-graphite text-graphite' : 'border-transparent text-graphite-2 hover:text-graphite'
               }`}
             >
@@ -263,7 +265,11 @@ export default function App() {
         )}
       </div>
 
-      {view === 'impact' ? (
+      {view === 'receiving' ? (
+        <div className="mt-6">
+          <ReceivingView />
+        </div>
+      ) : view === 'impact' ? (
         <div className="mt-6">
           <ImpactView />
         </div>

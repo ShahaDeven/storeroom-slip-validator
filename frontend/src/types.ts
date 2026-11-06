@@ -183,3 +183,87 @@ export interface Impact {
   }
   settings: { n_per_type: number; seed: number }
 }
+
+// ---------------------------------------------------------------- receiving
+
+export interface FieldSource {
+  document: string
+  page?: number
+  page_size?: [number, number]
+  bbox?: [number, number, number, number] | null
+  method: string
+  field: string
+  line: number | null
+}
+
+export interface ReceiptLine {
+  line: number
+  part_number: string | null
+  description: string | null
+  po_line: number | null
+  written: string | null
+  qty: number | null
+  unit: string | null
+  counts: boolean
+  disposition: string | null
+}
+
+export interface POLineState {
+  line: number
+  part_number: string
+  description: string
+  unit: string
+  ordered: number
+  received_before: number
+  this_receipt: number
+  open_after: number
+  state: string
+}
+
+export interface ReceiptPosting {
+  id: number
+  name: string
+  receipt_number: string
+  po_number: string
+  posted_at: string
+  received_by: string | null
+  lines: { part_number: string; qty: number; unit: string }[]
+  held: string[]
+  answers: string[]
+}
+
+export interface ReceivingReport {
+  status: Status
+  receipt_number: string | null
+  po_number: string | null
+  vendor: string | null
+  received_on: string | null
+  received_by: string | null
+  lines: ReceiptLine[]
+  po_lines: POLineState[]
+  issues: Issue[]
+  posted?: ReceiptPosting | null
+}
+
+export interface ReceiptSample {
+  id: string
+  file: string
+  kind: 'pdf' | 'image'
+  receipt_number: string
+  po_number: string
+  shows: string
+}
+
+export interface ReceivingSummary {
+  counts: { checked: number; posted: number; on_hold: number; problems_caught: number }
+  receipts: ReceiptPosting[]
+  pending: { name: string; status: Status; open_codes: string[]; po_number: string | null; receipt_number: string | null }[]
+  caught: { code: string; count: number }[]
+  pos: {
+    po_number: string
+    vendor: string
+    status: 'OPEN' | 'CLOSED'
+    ordered_on: string
+    lines: { line: number; part_number: string; description: string; unit: string; ordered: number; received: number; open: number }[]
+  }[]
+}

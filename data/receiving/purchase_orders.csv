@@ -1,0 +1,21 @@
+po_number,vendor,status,ordered_on,line,part_number,description,qty_ordered,unit,unit_size
+PO-26-1101,Northline Supply,OPEN,10/05/26,1,PL-1001,PVC Elbow 90 deg 3/4 in,50,EA,1
+PO-26-1101,Northline Supply,OPEN,10/05/26,2,PL-1010,Ball Valve 3/4 in Brass,12,EA,1
+PO-26-1101,Northline Supply,OPEN,10/05/26,3,PL-1040,PTFE Thread Seal Tape 1/2 in,24,RL,1
+PO-26-1102,Ridgeway Electric,OPEN,10/06/26,1,EL-2010,Duplex Receptacle 20A White,30,EA,1
+PO-26-1102,Ridgeway Electric,OPEN,10/06/26,2,EL-2011,Duplex Receptacle 15A White,30,EA,1
+PO-26-1102,Ridgeway Electric,OPEN,10/06/26,3,EL-2001,Wire Nut Yellow (box of 100),10,BX,100
+PO-26-1103,Calder Industrial,OPEN,10/07/26,1,HV-3001,Air Filter 20x20x2 MERV 8 (box of 12),6,BX,12
+PO-26-1103,Calder Industrial,OPEN,10/07/26,2,HV-3002,Air Filter 24x24x2 MERV 8 (box of 12),6,BX,12
+PO-26-1104,Northline Supply,OPEN,10/08/26,1,PL-1020,Wax Ring Toilet Seal,20,EA,1
+PO-26-1104,Northline Supply,OPEN,10/08/26,2,PL-1021,Toilet Flapper 2 in Universal,20,EA,1
+PO-26-1105,Ridgeway Electric,OPEN,10/09/26,1,EL-2001,Wire Nut Yellow (box of 100),10,BX,100
+PO-26-1106,Ridgeway Electric,OPEN,10/09/26,1,EL-2002,Wire Nut Red (box of 100),8,BX,100
+PO-26-1107,Calder Industrial,OPEN,10/10/26,1,HV-3002,Air Filter 24x24x2 MERV 8 (box of 12),6,BX,12
+PO-26-1108,Northline Supply,OPEN,10/12/26,1,PL-1050,P-Trap 1-1/2 in PVC,10,EA,1
+PO-26-1109,Calder Industrial,OPEN,10/13/26,1,GN-4010,Door Hinge 4.5 in Satin Nickel,12,PR,2
+PO-26-1109,Calder Industrial,OPEN,10/13/26,2,GN-4012,Lever Lockset Passage,8,EA,1
+PO-26-1111,Northline Supply,OPEN,10/14/26,1,PL-1001,PVC Elbow 90 deg 3/4 in,40,EA,1
+PO-26-1111,Northline Supply,OPEN,10/14/26,2,PL-1002,PVC Elbow 90 deg 1/2 in,40,EA,1
+PO-26-1112,Calder Industrial,OPEN,10/15/26,1,GN-4001,Work Gloves Leather Large,10,PR,2
+PO-26-1090,Ridgeway Electric,CLOSED,09/10/26,1,EL-2030,LED Tube T8 4 ft,48,EA,1

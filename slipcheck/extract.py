@@ -59,7 +59,7 @@ HEADER_FIELDS = ("wo_number", "date", "taken_by", "location", "signature")
 ITEM_FIELDS = ("part_number", "part_name", "qty", "unit")
 
 
-def add_provenance(data: dict, document: str) -> dict:
+def add_provenance(data: dict, document: str, header=HEADER_FIELDS, items=ITEM_FIELDS) -> dict:
     """Tag every field with where it came from: adds `source` to each field that lacks one.
 
     Only what is really known is recorded: the document, the slip line, and how it was read.
@@ -74,11 +74,11 @@ def add_provenance(data: dict, document: str) -> dict:
         if isinstance(field, dict) and "value" in field and "source" not in field:
             field["source"] = base | {"field": name, "line": line}
 
-    for name in HEADER_FIELDS:
+    for name in header:
         tag(data.get(name), name, None)
     for n, item in enumerate(data.get("items") or [], start=1):
         if isinstance(item, dict):
-            for name in ITEM_FIELDS:
+            for name in items:
                 tag(item.get(name), name, n)
     return data
 
@@ -124,7 +124,7 @@ def prepare_image(photo: Path) -> str:
     return base64.standard_b64encode(buf.getvalue()).decode()
 
 
-def extract_live(photo: Path) -> dict:
+def extract_live(photo: Path, prompt: str = PROMPT, header=HEADER_FIELDS, items=ITEM_FIELDS) -> dict:
     try:
         import anthropic
     except ImportError as e:
@@ -139,7 +139,7 @@ def extract_live(photo: Path) -> dict:
         max_tokens=1500,
         messages=[{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image}},
-            {"type": "text", "text": PROMPT},
+            {"type": "text", "text": prompt},
         ]}],
     )
     text = "".join(b.text for b in msg.content if b.type == "text")
@@ -151,7 +151,7 @@ def extract_live(photo: Path) -> dict:
         "extracted_on": date.today().isoformat(),
         "usage": {"input_tokens": msg.usage.input_tokens, "output_tokens": msg.usage.output_tokens},
     }
-    return add_provenance(data, photo.name)
+    return add_provenance(data, photo.name, header, items)
 
 
 def extract(photo: Path, live: bool = False, save: bool = False) -> dict:

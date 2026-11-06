@@ -1,0 +1,14 @@
+id,receipt_number,po_number,shows
+R01,R-20101,PO-26-1101,"complete delivery, nothing to ask"
+R02,R-20102,PO-26-1102,"partial delivery: one line short, one line not delivered; both stay open"
+R03,R-20103,PO-26-1103,over-shipment: 8 boxes against 6 ordered
+R04,R-20104,PO-26-1105,"pack size: 1,000 pieces converted to 10 boxes of 100"
+R05,R-20105,PO-26-1106,pack size: 10 pieces is not a whole box of 100
+R06,R-20106,PO-26-1107,no unit: 12 boxes or 12 pieces (one box)?
+R07,R-20107,PO-26-1108,an item that was never ordered
+R08,R-10388,PO-26-1104,duplicate: this receipt number was already received
+R09,R-20109,PO-26-1090,the purchase order is already closed
+R10,R-20110,PO-26-1110,PO number does not exist (digits swapped)
+R11,R-20111,PO-26-1109,"complete delivery, but nobody signed as received by"
+R12,R-20112,PO-26-1111,"part number typo: PL-1007 is not on the PO, but the description matches PL-1001"
+R13,R-20113,PO-26-1112,"complete delivery, delivered as an image (vision path)"

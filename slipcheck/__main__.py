@@ -124,6 +124,35 @@ def cmd_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_receive(args: argparse.Namespace) -> int:
+    from slipcheck.extract import ExtractionError as ReadError
+    from slipcheck.receiving import store
+    from slipcheck.receiving.extract import read_receipt
+    from slipcheck.receiving.render import render_receipt
+    from slipcheck.receiving.reference import RECEIVING_DIR, load_receiving
+    from slipcheck.receiving.validate import validate_receipt
+
+    ref = load_receiving()  # CLI checks against the seed history, not this session's postings
+    paths = (sorted((RECEIVING_DIR / "receipts").iterdir()) if args.target == "demo" else [Path(args.target)])
+    for path in paths:
+        try:
+            report = validate_receipt(read_receipt(path, live=args.live), ref)
+        except (InvalidSlip, ReadError) as e:
+            if args.target != "demo":
+                print(f"Rejected: {e}", file=sys.stderr)
+                return 2
+            print(f"{path.name:<12} {'REJECTED':<20} {e}")
+            continue
+        if args.target == "demo":
+            codes = ", ".join(sorted({i.code for i in report.issues if i.severity != "info"})) or "-"
+            print(f"{path.name:<12} {report.status:<20} {codes}")
+        elif args.json:
+            print(json.dumps(report.to_dict(), indent=2, default=str))
+        else:
+            print(render_receipt(report, str(path)))
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -156,6 +185,11 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--sweep", action="store_true", help="re-score cached readings at several review thresholds (dev only, no API calls)")
     e.add_argument("--json", action="store_true")
     e.set_defaults(fn=cmd_eval)
+    r = sub.add_parser("receive", help="check a delivery receipt (PDF or image) against its purchase order")
+    r.add_argument("target", help="a receipt file, or 'demo' to run every sample")
+    r.add_argument("--live", action="store_true", help="read an image with the vision model (needs ANTHROPIC_API_KEY)")
+    r.add_argument("--json", action="store_true")
+    r.set_defaults(fn=cmd_receive)
     s = sub.add_parser("serve", help="start the web UI and API")
     s.add_argument("--port", type=int, default=8000)
     s.set_defaults(fn=cmd_serve)

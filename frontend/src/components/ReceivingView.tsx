@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
-import { applySet, sameIssue, whereLabel } from '../slip'
+import { issueId, useTrail } from '../evidence'
+import { applySet, fieldAt, sameIssue, shown, whereLabel } from '../slip'
+import { EvidencePanel } from './EvidencePanel'
 import type { FieldSource, Fix, Issue, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Slip } from '../types'
 
 const STATUS_TEXT = { READY: 'Ready to receive', READY_WITH_WARNINGS: 'Ready to receive, with notes', BLOCKED: 'Hold' } as const
@@ -26,23 +28,33 @@ export function ReceivingView() {
   const [answers, setAnswers] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [postError, setPostError] = useState<string | null>(null)
+  const [opened, setOpened] = useState(0) // each open (or undo) starts a fresh evidence trail
+  const [inspect, setInspect] = useState<string | null>(null)
+  const trail = useTrail(selected ? `${selected.id}#${opened}` : null, report?.issues, report?.evidence)
 
   const refresh = useCallback(() => {
     api.receiving.summary().then(setSummary).catch(() => undefined)
   }, [])
 
+  const latest = useRef(0) // a slow response for an earlier pick must not overwrite a later one
+
   const open = useCallback(async (s: ReceiptSample) => {
+    const ticket = ++latest.current
     setSelected(s)
     setActive(null)
+    setInspect(null)
+    setOpened((n) => n + 1)
     setAnswers([])
     setPostError(null)
     setReport(null)
     try {
       const data = await api.receiving.sample(s.id)
+      if (ticket !== latest.current) return
       setOriginal(data.reading)
       setReading(data.reading)
       setError(null)
     } catch (e) {
+      if (ticket !== latest.current) return
       setReading(null)
       setError((e as Error).message)
     }
@@ -73,9 +85,26 @@ export function ReceivingView() {
   }, [reading, selected, refresh])
 
   const answer = (issue: Issue, set: Record<string, unknown>, label: string) => {
+    if (reading) {
+      trail.record(
+        issue,
+        label,
+        Object.keys(set).map((key) => ({
+          field: whereLabel(issue.line ? `line ${issue.line} ${key}` : key),
+          before: shown(fieldAt(reading, issue.line, key)) || '(blank)',
+          after: String(set[key] ?? ''),
+        })),
+      )
+    }
     setReading((prev) => (prev ? applySet(prev, issue.line, set) : prev))
     setAnswers((prev) => [...prev, `${whereLabel(issue.where)}: ${label}`])
     setActive(null)
+    setInspect(issueId(issue))
+  }
+
+  const pick = (issue: Issue) => {
+    setActive(issue)
+    setInspect(issueId(issue))
   }
 
   const onPost = async () => {
@@ -162,18 +191,29 @@ export function ReceivingView() {
                   {selected.kind === 'pdf' ? 'read from the PDF text layer (exact)' : 'read by the vision model (cached reading)'}
                 </span>
                 {answers.length > 0 && !posted && (
-                  <button type="button" className="cursor-pointer underline" onClick={() => original && (setReading(original), setAnswers([]))}>
+                  <button type="button" className="cursor-pointer underline" onClick={() => original && (setReading(original), setAnswers([]), setInspect(null), setOpened((n) => n + 1))}>
                     Undo answers
                   </button>
                 )}
               </div>
-              <DocumentWithEvidence id={selected.id} reading={reading} report={report} active={active} onPick={setActive} />
+              <DocumentWithEvidence id={selected.id} reading={reading} report={report} active={active} onPick={pick} />
               {selected.kind === 'image' && (
                 <p className="mt-2 text-xs text-graphite-2">
                   A rendered synthetic image, not a phone photo. Values read by a vision model carry no page coordinates, so
                   none are drawn.
                 </p>
               )}
+              <EvidencePanel
+                title="Evidence for each problem"
+                entries={trail.entries}
+                selected={inspect}
+                onSelect={(id) => {
+                  setInspect(id)
+                  setActive(report?.issues.find((i) => issueId(i) === id) ?? null)
+                }}
+                doc={{ kind: selected.kind === 'pdf' ? 'pdf' : 'image', url: `/api/receiving/page/${selected.id}` }}
+                postedAs={posted ? `receipt entry #${posted.id}` : null}
+              />
             </>
           ) : (
             <p className="text-graphite-2">Pick a receipt on the left.</p>
@@ -199,10 +239,10 @@ export function ReceivingView() {
 
               {blocks.length > 0 && (
                 <Group title="Decide before receiving" hint="Each one changes what goes onto the purchase order." issues={blocks}
-                  active={active} onPick={setActive} onAnswer={answer} />
+                  active={active} onPick={pick} onAnswer={answer} />
               )}
               {notes.length > 0 && (
-                <Group title="Worth a look" hint="These don't stop the receipt." issues={notes} active={active} onPick={setActive} onAnswer={answer} />
+                <Group title="Worth a look" hint="These don't stop the receipt." issues={notes} active={active} onPick={pick} onAnswer={answer} />
               )}
 
               {report.po_lines.length > 0 && (

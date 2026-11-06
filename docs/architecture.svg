@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1030" height="905" viewBox="-30 0 1030 905" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <title>Slip Check system design</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e2528"/>
+    </marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#c01f1f"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4a555b"/>
+    </marker>
+    <style>
+      .band { fill: #e4e8ea; stroke: #8f9aa1; stroke-width: 1; }
+      .ai { fill: #f4e5a0; stroke: #c9b27a; stroke-width: 1.2; }
+      .box { fill: #ffffff; stroke: #1e2528; stroke-width: 1.4; }
+      .gate { fill: #fbeaea; stroke: #c01f1f; stroke-width: 1.6; }
+      .trust { fill: #ffffff; stroke: #4a555b; stroke-width: 1.2; stroke-dasharray: 5 4; }
+      .db { fill: #ffffff; stroke: #1e2528; stroke-width: 1.4; }
+      .h { font-size: 13px; font-weight: 700; fill: #4a555b; letter-spacing: 0.06em; }
+      .t { font-size: 15px; font-weight: 600; fill: #1e2528; }
+      .s { font-size: 12.5px; fill: #4a555b; }
+      .sr { font-size: 12.5px; fill: #c01f1f; font-weight: 600; }
+      .lbl { font-size: 12px; fill: #4a555b; font-style: italic; }
+      .line { stroke: #1e2528; stroke-width: 1.5; fill: none; }
+      .red { stroke: #c01f1f; stroke-width: 1.5; fill: none; }
+      .dot { stroke: #4a555b; stroke-width: 1.4; fill: none; stroke-dasharray: 3 4; }
+    </style>
+  </defs>
+
+  <rect x="-30" width="1030" height="905" fill="#f3f5f6"/>
+
+  <!-- 1 · Documents in -->
+  <rect class="band" x="20" y="16" width="760" height="104" rx="8"/>
+  <text class="h" x="36" y="38">1 · DOCUMENTS IN</text>
+  <rect class="box" x="50" y="54" width="150" height="50" rx="5"/>
+  <text class="t" x="125" y="76" text-anchor="middle">Slip photo</text>
+  <text class="s" x="125" y="94" text-anchor="middle">handwritten</text>
+  <rect class="box" x="230" y="54" width="150" height="50" rx="5"/>
+  <text class="t" x="305" y="76" text-anchor="middle">Receipt image</text>
+  <text class="s" x="305" y="94" text-anchor="middle">photo or scan</text>
+  <rect class="box" x="410" y="54" width="150" height="50" rx="5"/>
+  <text class="t" x="485" y="76" text-anchor="middle">Receipt PDF</text>
+  <text class="s" x="485" y="94" text-anchor="middle">digital</text>
+  <rect class="box" x="590" y="54" width="150" height="50" rx="5"/>
+  <text class="t" x="665" y="76" text-anchor="middle">Typed slip</text>
+  <text class="s" x="665" y="94" text-anchor="middle">JSON</text>
+
+  <!-- 2 · Extraction -->
+  <rect class="ai" x="20" y="140" width="760" height="104" rx="8"/>
+  <text class="h" x="36" y="162">2 · EXTRACTION · THE ONLY AI IN THE SYSTEM</text>
+  <rect class="box" x="50" y="176" width="330" height="54" rx="5"/>
+  <text class="t" x="215" y="199" text-anchor="middle">Vision model: Claude Haiku</text>
+  <text class="s" x="215" y="218" text-anchor="middle">reads each field + a confidence · or a cached reading</text>
+  <rect class="box" x="410" y="176" width="150" height="54" rx="5"/>
+  <text class="t" x="485" y="199" text-anchor="middle">PDF text layer</text>
+  <text class="s" x="485" y="218" text-anchor="middle">PyMuPDF · no AI</text>
+  <text class="lbl" x="676" y="206">nothing to read</text>
+
+  <path class="line" d="M125 104 V176" marker-end="url(#a)"/>
+  <path class="line" d="M305 104 V176" marker-end="url(#a)"/>
+  <path class="line" d="M485 104 V176" marker-end="url(#a)"/>
+  <path class="line" d="M665 104 V264" marker-end="url(#a)"/>
+
+  <!-- Structured document -->
+  <path class="line" d="M215 230 V264" marker-end="url(#a)"/>
+  <path class="line" d="M485 230 V264" marker-end="url(#a)"/>
+  <rect class="box" x="50" y="264" width="690" height="62" rx="5"/>
+  <text class="t" x="395" y="288" text-anchor="middle">Structured document · one schema for every source</text>
+  <text class="s" x="395" y="309" text-anchor="middle">each field: value · raw text · confidence · source (document, line, method, model) · a word box only from PDF text</text>
+
+  <!-- 3 · Rules -->
+  <rect class="band" x="20" y="346" width="560" height="190" rx="8"/>
+  <text class="h" x="36" y="368">3 · RULES · PLAIN PYTHON, NO AI</text>
+  <path class="line" d="M300 326 V384" marker-end="url(#a)"/>
+  <rect class="gate" x="40" y="384" width="520" height="50" rx="5"/>
+  <text class="t" x="300" y="405" text-anchor="middle">Confidence gate</text>
+  <text class="sr" x="300" y="423" text-anchor="middle">a field read below 0.75 → HUMAN_REVIEW block, never guessed</text>
+  <path class="line" d="M165 434 V460" marker-end="url(#a)"/>
+  <path class="line" d="M435 434 V460" marker-end="url(#a)"/>
+  <rect class="box" x="40" y="460" width="250" height="58" rx="5"/>
+  <text class="t" x="165" y="483" text-anchor="middle">Slip validator</text>
+  <text class="s" x="165" y="502" text-anchor="middle">W/O, crew, parts, units, stock</text>
+  <rect class="box" x="310" y="460" width="250" height="58" rx="5"/>
+  <text class="t" x="435" y="483" text-anchor="middle">Receiving validator</text>
+  <text class="s" x="435" y="502" text-anchor="middle">PO lines, partials, units, duplicates</text>
+
+  <!-- Systems of record -->
+  <rect class="band" x="610" y="346" width="170" height="190" rx="8"/>
+  <text class="h" x="626" y="368">SYSTEMS OF RECORD</text>
+  <text class="s" x="626" y="385">mocked as CSV</text>
+  <g>
+    <path class="db" d="M630 400 a65 7 0 0 0 130 0 v28 a65 7 0 0 1 -130 0 z"/>
+    <ellipse class="db" cx="695" cy="400" rx="65" ry="7"/>
+    <text class="t" x="695" y="425" text-anchor="middle" font-size="13.5">Parts catalog</text>
+    <path class="db" d="M630 446 a65 7 0 0 0 130 0 v28 a65 7 0 0 1 -130 0 z"/>
+    <ellipse class="db" cx="695" cy="446" rx="65" ry="7"/>
+    <text class="t" x="695" y="471" text-anchor="middle" font-size="13.5">Work orders</text>
+    <path class="db" d="M630 492 a65 7 0 0 0 130 0 v28 a65 7 0 0 1 -130 0 z"/>
+    <ellipse class="db" cx="695" cy="492" rx="65" ry="7"/>
+    <text class="t" x="695" y="517" text-anchor="middle" font-size="13.5">POs + receipts</text>
+  </g>
+  <path class="line" d="M610 489 H562" marker-end="url(#a)"/>
+  <text class="lbl" x="586" y="482" text-anchor="middle">read</text>
+
+  <!-- Report -->
+  <path class="line" d="M165 518 V560" marker-end="url(#a)"/>
+  <path class="line" d="M435 518 V560" marker-end="url(#a)"/>
+  <rect class="box" x="40" y="560" width="520" height="60" rx="5"/>
+  <text class="t" x="300" y="584" text-anchor="middle">Report: status · issues · one-click fixes</text>
+  <text class="s" x="300" y="604" text-anchor="middle">+ evidence per issue: the value read and its source · the record checked · the rule</text>
+
+  <!-- 4 · Person in the loop -->
+  <path class="line" d="M300 620 V652" marker-end="url(#a)"/>
+  <rect class="band" x="20" y="642" width="560" height="96" rx="8"/>
+  <text class="h" x="36" y="664">4 · PERSON IN THE LOOP</text>
+  <rect class="box" x="40" y="676" width="520" height="50" rx="5"/>
+  <text class="t" x="300" y="697" text-anchor="middle">Counter / Receiving UI</text>
+  <text class="s" x="300" y="715" text-anchor="middle">the questions to ask · one-click answers · the evidence behind each problem</text>
+  <!-- answer loop back to the structured document -->
+  <path class="line" d="M40 701 H2 V295 H48" marker-end="url(#a)"/>
+  <text class="lbl" x="-6" y="600" text-anchor="middle" transform="rotate(-90 -6 600)">each answer re-runs the rules</text>
+
+  <!-- 5 · Posting gate and records -->
+  <rect class="band" x="20" y="758" width="560" height="128" rx="8"/>
+  <text class="h" x="36" y="780">5 · POSTING GATE AND RECORDS</text>
+  <path class="line" d="M130 726 V800" marker-end="url(#a)"/>
+  <text class="lbl" x="137" y="752">post</text>
+  <rect class="gate" x="40" y="800" width="190" height="64" rx="5"/>
+  <text class="t" x="135" y="822" text-anchor="middle">Posting gate</text>
+  <text class="sr" x="135" y="840" text-anchor="middle">refuses anything blocked</text>
+  <text class="sr" x="135" y="855" text-anchor="middle">or already posted</text>
+  <path class="red" d="M200 800 V726" marker-end="url(#ar)"/>
+  <text class="sr" x="207" y="752" font-weight="400" font-style="italic">refused</text>
+  <path class="line" d="M230 832 H268" marker-end="url(#a)"/>
+  <text class="lbl" x="249" y="824" text-anchor="middle">clean</text>
+  <path class="db" d="M270 812 a75 8 0 0 0 150 0 v40 a75 8 0 0 1 -150 0 z"/>
+  <ellipse class="db" cx="345" cy="812" rx="75" ry="8"/>
+  <text class="t" x="345" y="840" text-anchor="middle">Ledger · SQLite</text>
+  <text class="s" x="345" y="857" text-anchor="middle">entries · audit trail</text>
+  <path class="line" d="M420 832 H448" marker-end="url(#a)"/>
+  <rect class="box" x="450" y="808" width="110" height="48" rx="5"/>
+  <text class="t" x="505" y="830" text-anchor="middle">Accounting</text>
+  <text class="s" x="505" y="847" text-anchor="middle">CSV export</text>
+
+  <!-- Trust layer -->
+  <rect class="trust" x="630" y="560" width="350" height="326" rx="8"/>
+  <text class="h" x="648" y="584">TRUST LAYER</text>
+  <text class="s" x="648" y="603">runs the same rules and posting code</text>
+  <text class="s" x="648" y="619">to measure where they fail</text>
+  <rect class="box" x="648" y="636" width="314" height="54" rx="5"/>
+  <text class="t" x="664" y="658">Held-out evaluation</text>
+  <text class="s" x="664" y="677">30 handwritten slips · run-once lock</text>
+  <rect class="box" x="648" y="702" width="314" height="54" rx="5"/>
+  <text class="t" x="664" y="724">Adversarial suite</text>
+  <text class="s" x="664" y="743">13 cases built to break it · throwaway ledger</text>
+  <rect class="box" x="648" y="768" width="314" height="54" rx="5"/>
+  <text class="t" x="664" y="790">Failure analysis</text>
+  <text class="s" x="664" y="809">what was misread, what was stopped, what got in</text>
+  <text class="s" x="648" y="852">evaluation measures the rules;</text>
+  <text class="s" x="648" y="868">the adversarial suite also posts</text>
+  <path class="dot" d="M700 560 V545 H562 V505" marker-end="url(#ag)"/>
+  <path class="dot" d="M630 846 H584" marker-end="url(#ag)"/>
+</svg>

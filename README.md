@@ -4,9 +4,15 @@ In a facilities storeroom, crews take parts against a handwritten slip. Mistakes
 (an old, closed work order, a "2" for a part tracked in pairs, a part name with no number,
 unreadable handwriting) are made at the counter in seconds but found days later at the stock
 count, when the crew has moved on. **Slip Check checks the slip the moment it is entered**,
-and tells the clerk exactly what to ask the crew while they are still there.
+and tells the clerk exactly what to ask the crew while they are still there. The same pattern
+checks **delivery receipts against purchase orders** on the receiving side.
 
-**Walkthrough video:** [5 min](https://drive.google.com/file/d/13vSLpkyE_olFqDWKH8nPYvmO8nOQbQXe/view?usp=sharing) ·
+It comes with the evidence for how far to trust it: a held-out evaluation on handwritten slips
+([EVAL.md](EVAL.md)), an adversarial suite of cases built to break it, a failure analysis, and
+the evidence behind every problem it raises.
+
+**Walkthrough video:** [5 min](https://drive.google.com/file/d/13vSLpkyE_olFqDWKH8nPYvmO8nOQbQXe/view?usp=sharing)
+(recorded for the first version, before receiving, the evaluation and the new sections) ·
 **Screenshot:** [hard case on hold](docs/hard_case.png)
 
 ![A slip on hold, with problems marked next to each field and the questions to ask the crew](docs/hard_case.png)
@@ -22,21 +28,39 @@ pip install -r requirements.txt
 python -m slipcheck serve         # then open http://127.0.0.1:8000
 ```
 
-**Try the hard case:** open **Hard case: four problems** → pick *WO-26-0415* → pick a
-receptacle → pick *1 PR* → type the name into the review box → the stamp turns to
-**READY TO POST** → **Post to inventory**.
+**Try it (about five minutes):**
+1. **Counter:** open **Hard case: four problems** → pick *WO-26-0415* → pick a receptacle → pick
+   *1 PR* → type the name into the review box → the stamp turns to **READY TO POST** →
+   **Post to inventory**.
+2. **Evidence:** under the slip, in **Evidence for each problem**, pick *W/O number CLOSED_WO*. It
+   shows the value read, the work order as the system has it (closed 2026-09-29), the rule, and
+   your correction (26-0390 → WO-26-0415). Open **slip hard case** (the photo) and pick
+   *PART_AMBIGUOUS* to see the "dupler outlet" misread at 0.80 and why it was still stopped.
+3. **Receiving:** open **R03** (over-shipment): the evidence zooms to the "8" on the PDF and shows
+   the PO line (6 ordered, 0 received, 6 open).
+4. **Failure analysis** and **Adversarial suite** (left, under "Does it hold up?"): where it fails,
+   and the cases that got through.
 
 Run the tests with `pytest`.
 
 ## How it works
 
-```
-photo ──► vision extraction (AI, optional) ──┐
-                                             ├──► slip JSON ──► deterministic validator ──► clean entry
-typed slip (clerk transcription) ────────────┘    (one schema)   (rules, no AI)             + issues
-                                                                                             + "call the crew and ask..."
-                       low-confidence reads ──► HUMAN_REVIEW (never guessed)
-```
+![System design: documents in, extraction (the only AI), structured document, rules against the systems of record, report with evidence, person in the loop, posting gate and ledger, with the trust layer alongside](docs/architecture.svg)
+
+Top to bottom:
+1. **Documents in:** slip photos, typed slips, receipt images and receipt PDFs.
+2. **Extraction, the only AI step:** the vision model reads photos and images; PDFs are read
+   from their text layer with no AI. Every field keeps its value, raw text, confidence and source.
+3. **Rules, no AI:** a field read below 0.75 confidence gets a `HUMAN_REVIEW` block instead of
+   being trusted, and the rest of the document is still checked against the systems of record.
+   The report carries each issue with its one-click fixes and its evidence.
+4. **Person in the loop:** the clerk answers in the UI, and each answer re-runs the rules on the
+   corrected document.
+5. **Posting gate:** refuses anything still blocked or already posted, then writes the entry and
+   its audit trail.
+
+The trust layer (dotted lines) runs the same rules and posting code to measure where they fail. The
+diagram is a hand-drawn SVG (`docs/architecture.svg`), so it shows in any Markdown viewer.
 
 **AI only reads; rules decide.** The vision model transcribes the handwriting and gives a
 confidence per field. Every decision (does this W/O exist, is it open, which unit, is there
@@ -54,9 +78,14 @@ What that design guarantees, and what it doesn't:
 
 ## Using the app
 
-| Tab | What it shows |
+The sections are in the left-hand navigation, in three groups: **At the counter** (Counter,
+Receiving), **Records** (Shift log, Data) and **Does it hold up?** (Failure analysis,
+Adversarial suite, Impact).
+
+| Section | What it shows |
 |---|---|
 | **Counter** | The slip drawn as the paper copy, problems marked next to each field, a HOLD / READY TO POST stamp, and the questions to ask the crew with one-click answers. Answering re-checks the slip; corrections appear over the struck-through original. Drop in your own photo or JSON slip on the left. |
+| **Evidence for each problem** (under the slip on Counter, and under the receipt on Receiving) | Pick any problem, open or already answered, and see the chain behind it: (1) the document (the photo and line for a handwritten slip; a zoom on the real word box for a PDF; no invented boxes for vision reads), (2) the value read with its confidence and method, (3) the record it was checked against (the work order, catalog part, PO line or receiving history), (4) the rule in plain words and whether it blocks or only warns, (5) the clerk's correction, before and after. Evidence is built after validation (`slipcheck/evidence.py`), so it explains decisions without taking part in them. |
 | **Receiving** | A delivery receipt checked against its purchase order. The page is shown with each problem's real word box drawn on it (PDF text layer; images read by the vision model get no invented boxes). Over-shipments, pack-size questions, unordered items, duplicates and closed POs block with one-click decisions (receive the open amount, accept, return to vendor, hold for the buyer); a short delivery is a partial, not a failure, and the PO line stays open. |
 | **Failure analysis** | Where reading plus rules goes wrong, from the saved evaluation results (nothing re-run): headline numbers, a 30-second summary, misreads per field split by what the checker did (stopped, warned only, nothing raised), confidence against correctness with the review threshold, every wrong value nothing stopped, false positives, review load per slip, and results by handwriting style, photo condition and document type. Switch between held-out corrected, held-out locked and development. |
 | **Adversarial suite** | Deliberately difficult cases (a duplicate under a new file name or receipt number, the right PO from the wrong supplier, partial then over deliveries, confident misreads), each with what *should* happen next to what did. They run live, through the same rules and posting code, in a throwaway ledger. Known gaps are listed first, each with why it got in and what would close it. See [Adversarial suite](#adversarial-suite). |
@@ -115,7 +144,7 @@ cent each. The key can go in a `.env` file in the project folder.
 | `data/receiving/purchase_orders.csv` | 12 purchase orders from 3 invented vendors: the system of record for receiving |
 | `data/receiving/receipts_seed.csv` | deliveries already received before the demo (so partial and closed POs exist) |
 | `data/receiving/receipts/` | 12 digital delivery-receipt PDFs (one per scenario, see `scenarios.csv`) and one image receipt for the vision path |
-| `data/eval/` | the evaluation set: `WRITE_THESE.md`, `labels.csv` (what each handwritten slip says), photos and cached readings |
+| `data/eval/` | the evaluation set: `WRITE_THESE.md`, `labels.csv` (what each handwritten slip says), photos, cached readings, `corrections.json` (the recorded photo swap), the results files and the held-out lock (`.heldout_run.json`) |
 | `data/impact_assumptions.json` | inputs to the impact estimate, each tagged observed / assumed / unknown |
 | `forms/checkout_slip.html` | printable blank slip (optional; a hand-drawn slip works too) |
 
@@ -217,7 +246,7 @@ If the model's assumptions hold, the break-even is low: about 6% of count mismat
 to start as a slip error. What would sink it is almost all drift coming from
 somewhere else (parts taken with no slip, receiving errors, loss); a two-week pilot alongside
 the paper process measures exactly that. Run `python -m slipcheck impact` for the full table,
-or use the Impact tab to change any input.
+or use the Impact section to change any input.
 
 <details>
 <summary>Inputs, detection by error type, and model limits</summary>
@@ -264,6 +293,8 @@ The same pattern on the other side of the storeroom door. Must-have rules, all i
 | Pieces vs boxes / pairs | converted when exact (1,000 ea = 10 boxes of 100); otherwise a question with the readings to choose from |
 | Item not on the PO | block: change to the PO line it most resembles (never one already on the receipt), return, or hold for the buyer |
 | Receipt number already received | block (duplicate); the over-shipment it would also cause is not reported twice |
+| Same PO, date and quantities as a received receipt, under a new number | block (`POSSIBLE_DUPLICATE`); a person can confirm it is a separate delivery |
+| Vendor on the receipt is not the PO's vendor | block: either the PO number is wrong or the goods are from someone else; answers are the PO's vendor (name written differently) or that vendor's own open POs |
 | PO closed or fully received | block, with the vendor's open POs as options |
 | PO number not in the system | block, with look-alike numbers from the same vendor |
 | Nobody named as received by | block; type the name |
@@ -271,11 +302,11 @@ The same pattern on the other side of the storeroom door. Must-have rules, all i
 Price variance is deliberately not checked: these receipts confirm quantities, not prices, which
 belong to a later invoice match. Posting raises each PO line's received-to-date (mocked, local
 SQLite) and every check and posting lands in an audit trail (`GET /api/events`). Receiving does
-not yet change on-hand stock in the Data tab.
+not yet change on-hand stock in the Data section.
 
 ## Adversarial suite
 
-`python -m slipcheck adversarial` (and the **Adversarial suite** tab) runs 13 cases built to
+`python -m slipcheck adversarial` (and the **Adversarial suite** section) runs 13 cases built to
 break the checker. Each one states the outcome it *should* have, then runs the real validator and
 the real posting step in a throwaway SQLite file, so the shift log is never touched. Current
 result: **9 as expected, 4 known gaps, 0 regressions.**
@@ -331,15 +362,18 @@ what would measure the rest.
 
 | | |
 |---|---|
-| **Implemented** | every check below; fuzzy part and W/O matching; unit-of-issue conversion; confidence-gated human review; one-click answers that re-check the slip; posting with duplicate protection and stock deduction; shift log; Data tab; accounting CSV with the cause of each correction; detection measurement on injected errors; web UI (React + FastAPI), CLI, JSON output; live photo reading; tests |
-| **Mocked** | catalog and work orders are CSVs standing in for the inventory system; "Post to inventory" writes to a local SQLite file. Photo reading defaults to replaying the cached **real Claude readings** of the two handwritten slips, so no key is needed |
-| **Estimated** | the hours and dollars on the Impact tab and from `slipcheck impact` |
+| **Implemented** | every check below; fuzzy part and W/O matching; unit-of-issue conversion; confidence-gated human review; one-click answers that re-check the slip; posting with duplicate protection and stock deduction; shift log; Data section; accounting CSV with the cause of each correction; receiving (receipt vs PO, partial deliveries, dispositions, audit trail); per-field provenance; evidence for every issue; held-out evaluation with a run-once lock; adversarial suite; failure analysis; web UI (React + FastAPI), CLI, JSON output; live photo reading; tests |
+| **Mocked** | catalog, work orders, purchase orders and receiving history are CSVs standing in for the inventory and purchasing systems; posting writes to a local SQLite file. Photo reading defaults to replaying cached **real Claude readings**, so no key is needed |
+| **Modeled, not measured** | the hours and dollars in the Impact section and from `slipcheck impact` |
 | **Deferred** | a real inventory system; sign-in for several clerks; notifying crews; part prices and write-off value; multi-page slips; calibrating the model's confidence against real accuracy |
 
 ## Known limitations
 
 - What was and wasn't tested (writers, layouts, image quality, suppliers, catalogs, model) is a table in [EVAL.md](EVAL.md#what-was-tested-and-what-wasnt), with how each gap would be measured.
 - The model's own confidence is not calibrated (see "dupler" above). The review threshold (0.75) needs tuning on real slips.
+- Known gaps, pinned by the adversarial suite: a confident, plausible quantity misread posts (A7, S2); a W/O misread that lands on another crew's real work order only warns, so it can post (S3); a part number one digit off is not caught when the description differs only in size (S4).
+- Receipt reading accuracy is not evaluated: PDFs are read from the text layer, and there is no labelled set of photographed receipts.
+- Receiving does not change on-hand stock in the Data section.
 - Location matching handles prefixes ("Pierce Lib") but not arbitrary abbreviations ("Davis Sci Ctr" still warns).
 - Offline OCR (e.g. Tesseract) was not used; it performs poorly on handwriting.
 
@@ -361,8 +395,10 @@ output:
 1. **How much stock drift comes from parts taken with no slip at all.** If that dominates, a slip checker can't fix it, and that is the result that would make me stop.
 2. **How soon slips are actually entered.** Catching errors "while the crew is reachable" assumes same-day entry; batch entry at week's end shrinks the benefit.
 3. Error frequency by type on real slips, to decide which checks earn their place.
-4. Photo-reading accuracy on 50+ real handwritten slips, and where to set the review threshold.
-5. **Three-way match.** Receiving now checks receipt against PO; adding the vendor invoice (prices) completes the match accounts payable relies on.
+4. Photo-reading accuracy on 50+ real handwritten slips from several writers, and where to set the review threshold.
+5. **Make W/O cross-checks block instead of warn** (adversarial case S3), tested on new development data, not on the spent held-out set.
+6. **A second source for quantities** (packing list, advance ship notice, count at put-away): the only way to catch a confident, plausible misread.
+7. **Three-way match.** Receiving now checks receipt against PO; adding the vendor invoice (prices) completes the match accounts payable relies on.
 
 ---
 
@@ -384,7 +420,23 @@ output:
 | `HUMAN_REVIEW` | block | desk: any field read with confidence < 0.75; illegible ≠ blank |
 | `MISSING_DATE`, `BAD_DATE`, `FUTURE_DATE`, `BEFORE_WO_OPENED` | warn | |
 
-Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`.
+Receiving:
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `MISSING_PO`, `UNKNOWN_PO`, `PO_CLOSED` | block | no PO, a PO that does not exist, or one closed or fully received |
+| `VENDOR_MISMATCH` | block | the receipt's vendor is not the PO's vendor |
+| `DUPLICATE_RECEIPT`, `POSSIBLE_DUPLICATE` | block | receipt number already received; or same PO, date and quantities under another number |
+| `UNORDERED_ITEM`, `NO_PART` | block | a line that matches no PO line |
+| `OVER_SHIPMENT` | block | more than is still open; decide: receive the open amount, accept, or return |
+| `UNIT_AMBIGUOUS`, `UNIT_REMAINDER`, `UNIT_MISMATCH` | block | pieces vs boxes or pairs that can't be settled exactly |
+| `MISSING_RECEIVED_BY`, `MISSING_QTY`, `BAD_QTY`, `HUMAN_REVIEW` | block | |
+| `SHORT_SHIPMENT`, `LINE_NOT_DELIVERED` | warn | partial delivery; the PO line stays open |
+| `DUPLICATE_LINE`, `UNIT_ASSUMED`, `MISSING_RECEIPT_NUMBER`, `MISSING_DATE`, `BAD_DATE`, `FUTURE_DATE`, `BEFORE_PO_DATE` | warn | |
+| `UNIT_CONVERTED`, `NAME_MATCHED`, `OVER_ACCEPTED`, `SEPARATE_DELIVERY`, `LINE_RETURNED`, `LINE_HELD` | info | done automatically, or a decision recorded |
+
+Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`. Every code has a
+plain-language rule in `slipcheck/evidence.py`, shown in the evidence panel.
 
 </details>
 
@@ -395,6 +447,7 @@ Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`
 |---|---|
 | `rapidfuzz` | core fuzzy matching (offline) |
 | `fastapi`, `uvicorn`, `python-multipart` | API and web UI server |
+| `pymupdf` | receiving: reads PDF receipts from their text layer, with word positions, and renders the page |
 | `anthropic`, `pillow` | live photo reading only: API client, and straightening/shrinking phone photos |
 | `python-dotenv` | optional: reads `ANTHROPIC_API_KEY` from `.env` |
 | `pytest`, `httpx` | tests |
@@ -406,6 +459,10 @@ Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`
 | Rules | plain Python (`slipcheck/validate.py`), shared with the CLI |
 | Reading photos | Claude Haiku vision, or cached readings (`slipcheck/extract.py`) |
 | Shift log and estimate | `slipcheck/ledger.py` (SQLite), `slipcheck/impact.py` |
+| Receiving | `slipcheck/receiving/` (reference, extract, validate, store, api) |
+| Evidence | `slipcheck/evidence.py` (built after validation; takes no part in decisions) |
+| Evaluation | `slipcheck/eval.py` (harness, held-out lock, corrections, re-score), `slipcheck/failures.py` (failure analysis) |
+| Adversarial suite | `slipcheck/adversarial.py` (real rules and posting, throwaway ledger per case) |
 
 Changing the UI (Node 20+):
 

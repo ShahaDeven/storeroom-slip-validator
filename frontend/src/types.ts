@@ -40,6 +40,8 @@ export interface Report {
   lines: Line[]
   issues: Issue[]
   posted?: Posting | null
+  /** evidence[i] explains issues[i] */
+  evidence?: Evidence[]
 }
 
 export interface Sample {
@@ -243,6 +245,7 @@ export interface ReceivingReport {
   po_lines: POLineState[]
   issues: Issue[]
   posted?: ReceiptPosting | null
+  evidence?: Evidence[]
 }
 
 export interface ReceiptSample {
@@ -396,4 +399,19 @@ export interface FailureGroup {
   fields_correct: Prop
   slips_reviewed: number
   slips_posting_wrong: number
+}
+
+// ------------------------------------------------------------ evidence for each discrepancy
+
+export interface Evidence {
+  rule: { code: string; text: string; checks_against: string; outcome: string }
+  extracted: {
+    field: string
+    line: number | null
+    value: unknown
+    raw: string | null
+    confidence: number
+    source: (FieldSource & { model?: string; extracted_at?: string; review_status?: string }) | null
+  } | null
+  reference: { title: string; rows: [string, string][]; candidates: string[] } | null
 }

@@ -23,6 +23,7 @@ from pydantic import BaseModel
 
 from slipcheck import impact as impact_model
 from slipcheck import ledger
+from slipcheck.evidence import slip_evidence
 from slipcheck.extract import LIVE_MODEL, ExtractionError, extract
 from slipcheck.receiving.api import router as receiving_router
 from slipcheck.reference import DATA_DIR, load_reference
@@ -48,12 +49,14 @@ class PostRequest(BaseModel):
     answers: list[str] = []
 
 
-def _check(slip: Any) -> Report:
+def _check(slip: Any, with_ref: bool = False):
     """Validate against stock as it stands after this shift's postings."""
+    stock = ledger.with_posted_stock(ref)
     try:
-        return validate(slip, ledger.with_posted_stock(ref))
+        report = validate(slip, stock)
     except InvalidSlip as e:
         raise HTTPException(422, str(e))
+    return (report, stock) if with_ref else report
 
 
 def _inside(base: Path, name: str) -> Path | None:
@@ -115,11 +118,12 @@ def photo(name: str) -> FileResponse:
 
 @app.post("/api/validate")
 def validate_slip(req: ValidateRequest) -> dict:
-    report = _check(req.slip)
+    report, stock = _check(req.slip, with_ref=True)
     posting = ledger.find_posting(report)
     if req.name and not posting:
         ledger.record_check(req.name, report)
-    return report.to_dict() | {"posted": posting}
+    # evidence[i] explains report.issues[i]: what was read, the record it was checked against, the rule
+    return report.to_dict() | {"posted": posting, "evidence": slip_evidence(req.slip, report, stock)}
 
 
 @app.post("/api/post")

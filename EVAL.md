@@ -222,7 +222,7 @@ cross-checks block instead of warn is the first change worth testing, on new dev
 | Time per human review | not measured |
 
 Until the three timing rows are measured, nothing here supports a time-saving claim; the Impact
-tab is a model with stated assumptions. The smallest useful measurement is a timing pilot: the same
+section is a model with stated assumptions. The smallest useful measurement is a timing pilot: the same
 20 slips entered by hand and through Slip Check, timing each slip and each review, by at least two
 clerks.
 

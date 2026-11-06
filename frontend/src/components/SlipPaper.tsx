@@ -158,7 +158,7 @@ function Notes({ issues, active, onPick }: { issues: Issue[]; active: Issue | nu
           key={i.code + i.where}
           type="button"
           onClick={() => onPick(i)}
-          className={`-rotate-2 cursor-pointer rounded-sm px-1 font-hand text-sm leading-none ${
+          className={`-rotate-2 cursor-pointer rounded-sm px-1 font-hand text-sm leading-none [overflow-wrap:normal] break-normal ${
             i.severity === 'block' ? 'text-redpen' : 'text-amber'
           } ${sameIssue(active, i) ? 'bg-white/60 ring-1 ring-current' : 'hover:bg-white/40'}`}
         >

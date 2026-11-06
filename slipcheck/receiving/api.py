@@ -15,6 +15,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
+from slipcheck.evidence import receipt_evidence
 from slipcheck.extract import ExtractionError
 from slipcheck.receiving import store
 from slipcheck.receiving.extract import read_receipt
@@ -60,12 +61,13 @@ def _reference_for(reading: Any):
         (store.find_posted(number) if number else None)
 
 
-def _check(reading: Any):
+def _check(reading: Any, with_ref: bool = False):
     ref, posted = _reference_for(reading)
     try:
-        return validate_receipt(reading, ref), posted
+        report = validate_receipt(reading, ref)
     except InvalidSlip as e:
         raise HTTPException(422, str(e))
+    return (report, posted, ref) if with_ref else (report, posted)
 
 
 @router.get("/samples")
@@ -111,10 +113,10 @@ async def extract_upload(file: UploadFile = File(...), live: bool = Form(False))
 
 @router.post("/validate")
 def validate_it(req: ReceiptRequest) -> dict:
-    report, posted = _check(req.receipt)
+    report, posted, ref = _check(req.receipt, with_ref=True)
     if req.name and not posted:
         store.record_check(req.name, report)
-    return report.to_dict() | {"posted": posted}
+    return report.to_dict() | {"posted": posted, "evidence": receipt_evidence(req.receipt, report, ref)}
 
 
 @router.post("/post")

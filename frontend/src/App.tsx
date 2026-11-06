@@ -10,6 +10,8 @@ import { Inbox, titleOf } from './components/Inbox'
 import { ShiftLog } from './components/ShiftLog'
 import { SideNav, type View } from './components/SideNav'
 import { SlipPaper } from './components/SlipPaper'
+import { EvidencePanel } from './components/EvidencePanel'
+import { issueId, useTrail } from './evidence'
 import { applySet, fieldAt, pinKey, shown, whereLabel } from './slip'
 import type { Fix, Issue, Meta, Report, Sample, ShiftLog as Log, Slip } from './types'
 
@@ -37,6 +39,10 @@ export default function App() {
   const [live, setLive] = useState(false)
   const [showPhoto, setShowPhoto] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [opened, setOpened] = useState(0) // each open (or undo) starts a fresh evidence trail
+  const [inspect, setInspect] = useState<string | null>(null)
+
+  const trail = useTrail(loaded ? `${loaded.name}#${opened}` : null, report?.issues, report?.evidence)
 
   const refreshLog = useCallback(() => {
     api.shiftLog().then(setShiftLog).catch(() => undefined)
@@ -51,6 +57,9 @@ export default function App() {
     setActive(null)
     setPostError(null)
     setShowPhoto(false)
+    setReport(null)
+    setInspect(null)
+    setOpened((n) => n + 1)
   }, [])
 
   const reject = (name: string, message: string, raw?: string) => {
@@ -149,9 +158,24 @@ export default function App() {
       }
       return next
     })
+    trail.record(
+      issue,
+      label,
+      Object.keys(set).map((key) => ({
+        field: whereLabel(issue.line ? `line ${issue.line} ${key}` : key),
+        before: shown(fieldAt(before, issue.line, key)) || '(blank)',
+        after: String(set[key] ?? ''),
+      })),
+    )
     setSlip((prev) => (prev ? applySet(prev, issue.line, set) : prev))
     setLog((prev) => [...prev, `${whereLabel(issue.where)}: ${label}`])
     setActive(null)
+    setInspect(issueId(issue))
+  }
+
+  const pick = (issue: Issue) => {
+    setActive(issue)
+    setInspect(issueId(issue))
   }
 
   const onFix = (issue: Issue, fix: Fix) => answer(issue, fix.set, fix.label)
@@ -288,8 +312,20 @@ export default function App() {
                   report={report}
                   corrections={corrections}
                   active={active}
-                  onPick={setActive}
+                  onPick={pick}
                   posted={!!posting}
+                />
+                <EvidencePanel
+                  title="Evidence for each problem"
+                  entries={trail.entries}
+                  selected={inspect}
+                  onSelect={(id) => {
+                    setInspect(id)
+                    const open = report?.issues.find((i) => issueId(i) === id)
+                    setActive(open ?? null)
+                  }}
+                  doc={loaded?.photo ? { kind: 'photo', url: loaded.photo } : { kind: 'typed' }}
+                  postedAs={posting ? `entry #${posting.id}` : null}
                 />
                 <details className="mt-4 text-sm text-graphite-2">
                   <summary className="cursor-pointer">What the checker received</summary>
@@ -308,7 +344,7 @@ export default function App() {
               <Counter
                 report={report}
                 active={active}
-                onPick={setActive}
+                onPick={pick}
                 onFix={onFix}
                 onEnter={onEnter}
                 log={log}

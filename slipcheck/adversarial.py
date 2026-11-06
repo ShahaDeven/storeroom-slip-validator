@@ -197,7 +197,7 @@ CASES: list[Case] = [
          "The person and building on the slip don't belong to that work order. The pull must not post to it.",
          known_gap="Shown, not stopped. The cross-checks notice (NOT_ON_CREW, LOCATION_MISMATCH), but both are "
                    "warnings, and a warning does not block posting: a clerk who clicks past them books the pull to "
-                   "Custodial. EVAL.md counts a warning like this as 'caught'. Making these a block is the obvious "
+                   "Custodial. EVAL.md counts this as posted in its 'would be posted' rows. Making these a block is the obvious "
                    "fix. It is not made yet because the slip rules are frozen for the evaluation; changing them "
                    "means a new round of development data."),
     Case("S4", "slips", "A part number one digit off, pointing at a real neighbouring part",

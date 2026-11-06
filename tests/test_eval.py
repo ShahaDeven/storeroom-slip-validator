@@ -211,3 +211,40 @@ def test_the_recorded_corrections_file_is_well_formed():
     c = ev.load_corrections()
     assert [s["slips"] for s in c["photo_swaps"]] == [["H02", "H03"]]
     assert all({"slip", "field", "action"} <= set(e) for e in c["label_errors"])
+
+
+# ------------------------------------------------------------ the stricter question: does a wrong value get posted?
+
+
+def test_a_warning_is_noticed_but_does_not_stop_posting(ref):
+    """WO-26-0462 is another crew's real W/O: the cross-checks warn, and a warning still posts."""
+    r = ev.evaluate_slip(row(), reading(wo="WO-26-0462"), ref)
+    bad = wrong(r)[0]
+    assert bad.new_flag and not bad.new_block and not bad.stopped and bad.reaches_posting
+    s = ev.summarize([r])
+    assert s["outcomes"]["misread_caught"]["k"] == 1  # the old, looser count calls this caught
+    assert s["reaches_posting"]["slips_with_wrong_critical_value"]["k"] == 1  # the strict one doesn't
+    assert s["reaches_posting"]["warned_only"] == 1
+
+
+def test_review_and_blocks_stop_a_wrong_value(ref):
+    low = wrong(ev.evaluate_slip(row(), reading(qty=("9", 0.5)), ref))[0]
+    assert low.review and low.stopped and not low.reaches_posting
+
+
+def test_a_description_beside_a_part_number_is_not_stored(ref):
+    """The posted entry carries the catalog name for PL-1001, so a misread description never posts."""
+    bad = wrong(ev.evaluate_slip(row(), reading(name=("3/4 ellbow", 0.9)), ref))[0]
+    assert not bad.stored and not bad.reaches_posting
+
+
+def test_a_confident_quantity_misread_reaches_posting(ref):
+    s = ev.summarize([ev.evaluate_slip(row(), reading(qty=("9", 0.95)), ref)])
+    assert s["reaches_posting"]["slips_with_wrong_critical_value"]["k"] == 1
+    assert s["reaches_posting"]["by_field"] == {"qty": 1}
+
+
+def test_rescore_needs_a_locked_run(tmp_path, monkeypatch):
+    monkeypatch.setattr(ev, "LOCK", tmp_path / "no_lock.json")
+    with pytest.raises(ev.EvalRefused, match="not been run"):
+        ev.run("heldout", rescore=True)

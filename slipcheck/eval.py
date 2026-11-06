@@ -21,6 +21,13 @@ Definitions (also written into EVAL.md):
                      unit question). The misread cannot reach the entry unnoticed. Assumes the
                      clerk picks the right option; every absorbed case is listed in the misread log.
   silent misread     a wrong field that is neither flagged nor absorbed.
+  stopped            the wrong field cannot post without a person settling that field: a review
+                     request, a new BLOCK on it, or an absorbing block. A new WARNING is not a
+                     stop: it is shown, and the slip still posts.
+  reaches posting    a wrong field that is stored in the posted entry (every critical field, plus
+                     date, taken-by and location; not a description beside a part number, which
+                     is replaced by the catalog name) and is not stopped. Assumes the clerk settles every stop
+                     correctly from the paper and posts past warnings (the pessimistic reading).
   not caught (slip)  a slip with at least one silent misread of a critical field.
   unnecessary review a correctly read field that was sent to review.
 The model's confidence is reported against observed correctness; it is not treated as a
@@ -197,6 +204,7 @@ class FieldResult:
     critical: bool
     review: bool = False
     new_flag: bool = False
+    new_block: bool = False  # the new flag is a block, not just a warning
     absorbed: bool = False
     source: dict | None = None
 
@@ -211,6 +219,21 @@ class FieldResult:
     @property
     def silent(self) -> bool:
         return not self.correct and not self.covered
+
+    @property
+    def stopped(self) -> bool:
+        """Posting needs a person to settle this field. A warning alone does not stop posting."""
+        return self.review or self.new_block or self.absorbed
+
+    @property
+    def stored(self) -> bool:
+        """Written into the posted entry. A description next to a part number is not: the entry
+        carries the catalog name for that number."""
+        return self.critical or self.name in ("date", "taken_by", "location")
+
+    @property
+    def reaches_posting(self) -> bool:
+        return not self.correct and not self.stopped and self.stored
 
 
 @dataclass
@@ -269,7 +292,7 @@ def evaluate_slip(row: dict, reading: dict, ref: Reference) -> SlipResult:
                              read.confidence if read else None, correct, critical,
                              source=read.source if read else None)
         if actual is None:
-            result.new_flag = True
+            result.new_flag = result.new_block = True
         else:
             for issue in actual.issues:
                 if issue.severity == "info" or (line, name) not in _pins(issue):
@@ -278,6 +301,7 @@ def evaluate_slip(row: dict, reading: dict, ref: Reference) -> SlipResult:
                     result.review = True
                 elif (issue.code, issue.line, issue.key) not in expected:
                     result.new_flag = True
+                    result.new_block = result.new_block or issue.severity == "block"
                 elif issue.severity == "block" and (issue.line, issue.key) == (line, name):
                     result.absorbed = True  # a direct block on this very field: a person must settle it
         fields.append(result)
@@ -343,6 +367,18 @@ def summarize(results: list[SlipResult], slips_total: int | None = None) -> dict
             "silent_noncritical": sum((not f.critical) and f.silent for f in wrong),
         },
         "detection_recall": prop(sum(f.covered for f in wrong), len(wrong)),
+        # The stricter question: would a wrong value end up in a posted entry?
+        "reaches_posting": {
+            "slips_with_wrong_critical_value": prop(sum(any(f.critical and f.reaches_posting for f in r.fields)
+                                                        for r in results), n),
+            "slips_with_any_wrong_value": prop(sum(any(f.reaches_posting for f in r.fields) for r in results), n),
+            "wrong_fields": sum(f.reaches_posting for f in wrong),
+            "wrong_critical_fields": sum(f.critical and f.reaches_posting for f in wrong),
+            "warned_only": sum(f.new_flag and not f.stopped for f in wrong),
+            "by_field": {name: sum(f.reaches_posting and f.name == name for f in wrong)
+                         for name in sorted({f.name for f in wrong if f.reaches_posting})},
+            "stopped": prop(sum(f.stopped for f in wrong), len(wrong)),
+        },
         "unnecessary_review": prop(sum(f.review for f in correct), len(correct)),
         "review_rate": prop(sum(r.review_requested for r in results), n),
         "confidence_bins": bins,
@@ -355,8 +391,9 @@ def misread_log(results: list[SlipResult]) -> list[dict]:
     for r in results:
         for f in r.fields:
             if not f.correct:
-                caught = ("review" if f.review else "rules" if f.new_flag
-                          else "absorbed by an existing block" if f.absorbed else "NOT CAUGHT")
+                caught = ("review" if f.review else "rules (block)" if f.new_block
+                          else "absorbed by an existing block" if f.absorbed
+                          else "rules (warning only: still posts)" if f.new_flag else "NOT CAUGHT")
                 rows.append({"slip": r.slip_id, "style": r.style, "condition": r.condition,
                              "field": f"line {f.line} {f.name}" if f.line else f.name,
                              "paper": f.truth, "read": f.read,
@@ -379,14 +416,24 @@ class EvalRefused(RuntimeError):
 
 
 def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_frozen: bool = False,
-        rerun: bool = False, ref: Reference | None = None, corrected: bool = False) -> dict:
+        rerun: bool = False, ref: Reference | None = None, corrected: bool = False, rescore: bool = False) -> dict:
     """corrected=True re-scores the CACHED readings with data/eval/corrections.json applied (no API
-    calls, no lock, a separate results file). The locked results are never touched."""
+    calls, no lock, a separate results file). The locked results are never touched.
+
+    rescore=True re-scores the locked run's cached readings as they are, to report a metric added
+    after the run (no API calls, results_<split>_rescored.json). It also checks that every number
+    the locked run reported comes out the same, which holds only while rules and labels are unchanged."""
     ref = ref or load_reference()
     commit = _git("rev-parse", "HEAD")
     dirty = bool(_git("status", "--porcelain", "--untracked-files=no"))
     corrections = load_corrections() if corrected else {}
-    if corrected:
+    if rescore:
+        if corrected:
+            raise EvalRefused("Use --corrected or --rescore, not both.")
+        if split == "heldout" and not LOCK.exists():
+            raise EvalRefused("Nothing to re-score: the held-out set has not been run.")
+        live = False
+    elif corrected:
         if split == "heldout" and not LOCK.exists():
             raise EvalRefused("Corrections apply to a run that already happened. Run the held-out set first.")
         if not corrections:
@@ -427,6 +474,14 @@ def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_fro
         "slips": [asdict(r) | {"fields": [asdict(f) for f in r.fields]} for r in results],
     }
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    if rescore:
+        locked_path = EVAL_DIR / f"results_{split}.json"
+        locked = json.loads(locked_path.read_text(encoding="utf-8"))["summary"] if locked_path.exists() else None
+        report["split"] = f"{split} (re-scored from the cached readings)"
+        report["locked_summary_reproduced"] = (None if locked is None else
+                                               {k: report["summary"].get(k) == v for k, v in locked.items()})
+        (EVAL_DIR / f"results_{split}_rescored.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return report
     if corrected:
         report["split"] = f"{split} (corrected: see {CORRECTIONS.name})"
         report["corrections"] = corrections
@@ -512,6 +567,19 @@ def format_report(report: dict) -> str:
               f"  misread, caught (flag/review/block) {_pct(s['outcomes']['misread_caught'])}",
               f"  misread, NOT caught (critical)      {_pct(s['outcomes']['misread_not_caught'])}",
               f"  misread, minor and unflagged        {_pct(s['outcomes']['misread_noncritical_unflagged'])}", ""]
+    rp = s.get("reaches_posting")
+    if rp:
+        lines += ["Would a wrong value reach a posted entry? (stopped = review, a block on that field; a warning is not a stop.",
+                  " Assumes the clerk settles every stop correctly and posts past warnings.)",
+                  f"  slips posting a wrong critical value  {_pct(rp['slips_with_wrong_critical_value'])}",
+                  f"  slips posting any wrong value         {_pct(rp['slips_with_any_wrong_value'])}",
+                  f"  wrong fields stopped before posting   {_pct(rp['stopped'])}",
+                  f"  wrong fields that were only warned    {rp['warned_only']}", ""]
+    if report.get("locked_summary_reproduced"):
+        same = report["locked_summary_reproduced"]
+        bad = [k for k, ok in same.items() if not ok]
+        lines += ["Every number in the locked run reproduced exactly." if not bad
+                  else "WARNING: these locked numbers did NOT reproduce: " + ", ".join(bad), ""]
     w = s["wrong_fields"]
     lines += [f"Wrong fields: {w['total']}  (caught by review {w['caught_by_review']}, by a new rule flag "
               f"{w['caught_by_new_flag']}, absorbed by an existing block {w['absorbed_by_existing_block']}, "

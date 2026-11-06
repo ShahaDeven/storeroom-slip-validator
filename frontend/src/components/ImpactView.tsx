@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
-import type { Impact, Range } from '../types'
+import type { EvalSummary, Impact, Range } from '../types'
 
 interface Input {
   key: string
@@ -33,9 +33,11 @@ export function ImpactView() {
   const [values, setValues] = useState<Record<string, number> | null>(null)
   const [defaults, setDefaults] = useState<Record<string, number> | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [measured, setMeasured] = useState<EvalSummary | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
+    api.evalSummary().then(setMeasured).catch(() => setMeasured(null))
     api
       .impact({})
       .then((r) => {
@@ -68,26 +70,29 @@ export function ImpactView() {
   return (
     <div className="space-y-8">
       <div role="note" className="rounded-md border-l-4 border-amber bg-steel-3 px-4 py-3">
-        <p className="font-semibold">Estimated, not measured.</p>
+        <p className="font-semibold">A model, not a measurement. This is not a time-saving claim.</p>
         <p className="mt-0.5 max-w-3xl text-sm text-graphite-2">
-          Slips per week, mismatches per week and minutes per mismatch were observed in the storeroom. The rest are
-          assumptions you can adjust below. Only the detection rates were measured, by running the real checker on{' '}
-          {result.settings.n_per_type * Object.keys(result.detection).length} synthetic slips. A two-week pilot alongside the paper
-          process would replace the estimates with real numbers.
+          Nobody has timed a slip entered by hand against one entered through Slip Check, or timed a review. Slips per
+          week, mismatches per week and minutes per mismatch were observed in the storeroom; the rest are assumptions you
+          can adjust below. The detection rates come from running the real checker on{' '}
+          {result.settings.n_per_type * Object.keys(result.detection).length} synthetic slips. A timing pilot would
+          replace these assumptions with real numbers.
         </p>
       </div>
+
+      {measured?.heldout_corrected && <Measured m={measured} />}
 
       <section aria-live="polite" className="max-w-4xl">
         <p className="font-cond text-2xl leading-snug font-semibold sm:text-3xl">
           {mid.hours_per_year_saved >= 0 ? (
             <>
-              With these assumptions the check saves an estimated{' '}
-              <span className="text-stamp">{Math.round(mid.hours_per_year_saved)} staff hours a year</span> (about{' '}
+              If these assumptions held, the model says the check would save{' '}
+              <span className="underline decoration-rail decoration-2 underline-offset-4">{Math.round(mid.hours_per_year_saved)} staff hours a year</span> (about{' '}
               {money(mid.dollars_per_year_saved)}).
             </>
           ) : (
             <>
-              With these assumptions the check costs an estimated{' '}
+              If these assumptions held, the model says the check would cost{' '}
               <span className="text-redpen">{Math.round(-mid.hours_per_year_saved)} staff hours a year</span> more than
               it saves.
             </>
@@ -271,5 +276,52 @@ function Row({ label, a, b, range, strong = false }: { label: string; a: string;
       <td className="py-1.5 pr-2 text-right">{b}</td>
       <td className="hidden py-1.5 text-right text-graphite-2 sm:table-cell">{range}</td>
     </tr>
+  )
+}
+
+const frac = (p: { k: number; n: number }) => `${p.k}/${p.n}`
+
+/** What the handwriting evaluation measured, next to the model, so the two can't be confused. */
+function Measured({ m }: { m: EvalSummary }) {
+  const c = m.heldout_corrected!
+  const l = m.heldout_locked
+  const posted = c.reaches_posting
+  return (
+    <section aria-label="Measured in the evaluation" className="max-w-4xl rounded-md border border-rail/60 bg-steel-3 px-4 py-3">
+      <h2 className="font-cond text-lg font-bold">Measured, on {c.slips} held-out handwritten slips</h2>
+      <dl className="mt-2 grid gap-x-8 gap-y-3 sm:grid-cols-3">
+        <div>
+          <dt className="text-sm text-graphite-2">Slips needing a person to confirm a field</dt>
+          <dd className="font-cond text-2xl font-bold text-redpen">
+            {c.review_rate.rate !== null ? pct(c.review_rate.rate) : 'n/a'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm text-graphite-2">Correctly read fields sent to review anyway</dt>
+          <dd className="font-cond text-2xl font-bold">
+            {c.unnecessary_review.rate !== null ? pct(c.unnecessary_review.rate) : 'n/a'}
+          </dd>
+        </div>
+        {posted && (
+          <div>
+            <dt className="text-sm text-graphite-2">Slips that would post a wrong critical value</dt>
+            <dd className="font-cond text-2xl font-bold">
+              {l?.reaches_posting && (
+                <>
+                  {frac(l.reaches_posting.slips_with_wrong_critical_value)}
+                  <span className="text-base font-semibold text-graphite-2"> locked</span> ·{' '}
+                </>
+              )}
+              {frac(posted.slips_with_wrong_critical_value)}
+              <span className="text-base font-semibold text-graphite-2"> corrected</span>
+            </dd>
+          </div>
+        )}
+      </dl>
+      <p className="mt-2 text-sm text-graphite-2">
+        The model below does not include the time those reviews take. The time to process a slip, with or without the
+        check, and the time per review have not been measured. Details in EVAL.md.
+      </p>
+    </section>
   )
 }

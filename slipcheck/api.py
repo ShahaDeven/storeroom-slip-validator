@@ -179,6 +179,28 @@ def impact_with(req: ImpactRequest) -> dict:
     return impact_model.impact(ref, overrides=req.likely, detection=_detection())
 
 
+@app.get("/api/eval/summary")
+def eval_summary() -> dict:
+    """What the evaluation measured, from the saved results files (no model calls, nothing re-run)."""
+    from slipcheck.eval import EVAL_DIR
+
+    def pick(*names: str) -> dict | None:
+        for name in names:
+            path = EVAL_DIR / name
+            if path.exists():
+                r = json.loads(path.read_text(encoding="utf-8"))
+                s = r["summary"]
+                return {"slips": s["slips"], "review_rate": s["review_rate"],
+                        "unnecessary_review": s["unnecessary_review"],
+                        "critical_fields_correct": s["critical_fields_correct"],
+                        "reaches_posting": s.get("reaches_posting"), "commit": r.get("commit")}
+        return None
+
+    return {"dev": pick("results_dev.json"),
+            "heldout_locked": pick("results_heldout_rescored.json", "results_heldout.json"),
+            "heldout_corrected": pick("results_heldout_corrected.json")}
+
+
 @app.get("/api/adversarial")
 def adversarial_suite() -> dict:
     """Run every adversarial case now, through the real rules and posting code, in throwaway ledgers."""

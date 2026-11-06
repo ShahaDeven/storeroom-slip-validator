@@ -43,6 +43,15 @@ confidence per field. Every decision (does this W/O exist, is it open, which uni
 enough stock) is plain code against the catalog and the work orders, so it is repeatable,
 testable, and explainable to a supervisor or an auditor.
 
+What that design guarantees, and what it doesn't:
+- **An uncertain read cannot post silently.** A read below 0.75 confidence is a block, and posting
+  refuses anything with a block. A person has to settle it from the paper.
+- **A confident misread that no rule contradicts can post.** A "6" read as "9" at 0.95, under the
+  per-pull limit and under stock, goes through. The [evaluation](#evaluation-exploratory) and the
+  [adversarial suite](#adversarial-suite) measure how often this happens instead of hiding it;
+  closing it needs a second source for the count, not a better threshold.
+- **Warnings inform; they don't stop.** A clerk can post past one.
+
 ## Using the app
 
 | Tab | What it shows |
@@ -52,7 +61,7 @@ testable, and explainable to a supervisor or an auditor.
 | **Adversarial suite** | Deliberately difficult cases (a duplicate under a new file name or receipt number, the right PO from the wrong supplier, partial then over deliveries, confident misreads), each with what *should* happen next to what did. They run live, through the same rules and posting code, in a throwaway ledger. Known gaps are listed first, each with why it got in and what would close it. See [Adversarial suite](#adversarial-suite). |
 | **Shift log** | What was posted (W/O, location, parts, aisles, answers given at the counter), what is on hold and why, slips waiting on a handwriting check, problems caught before the count, stock after posting, and **Download for accounting (CSV)**: one row per posted part with the cause of every correction. |
 | **Data** | Every part with start, posted and on-hand (low stock flagged), every work order with what was issued against it, and a feed of stock changes. Rows changed by the latest posting are highlighted; refreshes every few seconds. |
-| **Impact (estimated)** | Manual vs with the check, with a slider for every input tagged Observed or Assumed and the break-even marked. See [Is it worth it?](#is-it-worth-it-estimated). |
+| **Impact (modeled)** | A model, not a measurement: manual vs with the check, with a slider for every input tagged Observed or Assumed and the break-even marked. See [Time and cost](#time-and-cost-a-model-not-a-measurement). |
 
 "Post to inventory" re-checks the slip on the server, refuses anything still blocked or
 already posted (same W/O, person, date and parts), and lowers on-hand, so the next slip for
@@ -68,12 +77,13 @@ python -m slipcheck check data/slips/01_clean.json             # representative 
 python -m slipcheck check data/slips/10_hard_case.json         # difficult case
 python -m slipcheck check data/slips/12_truncated.json         # invalid input -> rejected, exit 2
 python -m slipcheck check data/slips/10_hard_case.json --json  # machine-readable report
-python -m slipcheck impact                                     # estimated manual vs checked comparison
+python -m slipcheck impact                                     # modeled (not measured) manual vs checked comparison
 python -m slipcheck receive demo                               # every sample delivery receipt, one line each
 python -m slipcheck receive data/receiving/receipts/R03.pdf    # one receipt in full (over-shipment)
 python -m slipcheck adversarial                                # difficult cases: expected vs actual (exit 1 on a regression)
 python -m slipcheck eval --split dev                           # evaluation of photo reading + rules (see EVAL below)
 python -m slipcheck eval --split heldout --corrected          # held-out result with the recorded correction (no API calls)
+python -m slipcheck eval --split heldout --rescore            # the locked run re-scored with the stricter 'would be posted' rows
 
 python -m slipcheck check data/photos/slip_hard_case.jpeg                    # photo, cached reading (no key)
 python -m slipcheck check data/photos/slip_hard_case.jpeg --live             # photo, read live (ANTHROPIC_API_KEY)
@@ -183,12 +193,18 @@ Call A. Okafor (Electrical) now and ask:
 
 </details>
 
-## Is it worth it? (estimated)
+## Time and cost: a model, not a measurement
 
-**These are estimates, not measured savings.** Storeroom volumes are observed (10-20 slips a
-normal day, 7-8 count mismatches a week, 30-60 minutes to chase each); most other inputs are
-assumed. Only the detection rate is measured: the real checker was run on 2,100 synthetic
-slips with one known error each and caught **78%** of slip errors, weighted by an assumed mix.
+**This is not a time-saving claim.** Nobody has timed a slip entered by hand against one entered
+through Slip Check, or timed a review. The model below has a stated input for every number, and it
+leaves out a cost the evaluation did measure: **75% of handwritten slips needed a person to confirm
+a field**, which would add counter time the model doesn't include. Treat it as a hypothesis about
+where the value would come from, to be replaced by a timing pilot.
+
+Storeroom volumes are observed (10-20 slips a normal day, 7-8 count mismatches a week, 30-60
+minutes to chase each); most other inputs are assumed. Only the detection rate is measured: the
+real checker was run on 2,100 synthetic slips with one known error each and caught **78%** of slip
+errors, weighted by an assumed mix.
 
 | | Likely | Optimistic |
 |---|---|---|
@@ -196,8 +212,8 @@ slips with one known error each and caught **78%** of slip errors, weighted by a
 | **Staff hours saved a year** | **+91** (about $2,600) | **+242** |
 | **Pays off if at least this share of mismatches start on a slip** | **6%** | **0%** |
 
-The claim worth making is the break-even: the check pays off as long as about 6% or more of
-count mismatches start as a slip error. What would sink it is almost all drift coming from
+If the model's assumptions hold, the break-even is low: about 6% of count mismatches would have
+to start as a slip error. What would sink it is almost all drift coming from
 somewhere else (parts taken with no slip, receiving errors, loss); a two-week pilot alongside
 the paper process measures exactly that. Run `python -m slipcheck impact` for the full table,
 or use the Impact tab to change any input.
@@ -279,8 +295,9 @@ the slip rules are frozen for the evaluation; fixing them needs a new round of d
 
 `python -m slipcheck eval` runs the real validator twice per labelled handwritten slip, on the
 true transcription and on the model's reading, and reports what the model's mistakes cost:
-read correctly, misread but caught (low-confidence review, a new rule flag, or a block that makes
-a person decide that field anyway), misread and not caught, or a minor unflagged misread. It also
+read correctly, misread and stopped (low-confidence review, or a block on that field), misread
+and only warned about, or misread with nothing raised, and whether a wrong value would end up in
+the posted entry. It also
 reports confidence against observed correctness, with Wilson intervals.
 
 Protocol: 10 development slips (thresholds may be tuned here, `--sweep`) and 20 held-out slips,
@@ -288,19 +305,26 @@ written by **one writer in four deliberate styles**. The held-out set is run onc
 are frozen and committed (`--split heldout --confirm-frozen`; it refuses to run twice or with
 uncommitted changes).
 
-Held-out results (20 slips, run once after the freeze, corrected for one verified photo-naming
-error; the locked numbers are reported alongside in [EVAL.md](EVAL.md)):
+Held-out results (20 slips, run once after the freeze). Two photos had been saved under each
+other's names; the **locked** run is the recorded result, the **corrected** column re-scores the
+same readings with that one fix ([evidence in EVAL.md](EVAL.md#the-correction-and-what-it-taught)).
 
-| | Held-out |
-|---|---|
-| Critical fields read correctly | 140/149 (94%) |
-| Slips with a critical misread that went unnoticed | **0/20** (95% upper bound 16%) |
-| Fields read at confidence 0.90 or above that were still wrong | 6/146 |
-| Slips needing a person to confirm a field | 15/20 (75%) |
+| Held-out, 20 slips | Locked (recorded) | Corrected |
+|---|---|---|
+| **Slips where a wrong critical value would be posted** | **2/20** | **0/20** (95% upper bound 16%) |
+| Slips where any wrong stored value would be posted (names, dates, places) | 11/20 | 10/20 |
+| Slips needing a person to confirm a field | 15/20 (75%) | 15/20 (75%) |
+| Fields read at confidence 0.90+ that were still wrong | | 6/146 |
 
-The model's confidence alone did not catch every misread; the rules and review did. The price is
-review load. Full method, definitions, the correction and its evidence, and limits (one writer,
-30 slips) are in [EVAL.md](EVAL.md).
+"Would be posted" means nothing stopped it: no review request and no block on that field. A
+warning doesn't count as a stop, because the slip still posts. On development data 1 of 10 slips
+would have posted a wrong critical value: a W/O misread that only raised warnings.
+
+What this does **not** show: performance across different people's handwriting (one writer, four
+styles), other slip layouts, or real catalogs; and nothing about time saved. A 75% review rate
+means real extra work at the counter, and processing time has not been measured. See
+[EVAL.md](EVAL.md) for the method, every definition, a table of what was and wasn't tested, and
+what would measure the rest.
 
 ## Implemented / mocked / deferred
 
@@ -313,36 +337,23 @@ review load. Full method, definitions, the correction and its evidence, and limi
 
 ## Known limitations
 
+- What was and wasn't tested (writers, layouts, image quality, suppliers, catalogs, model) is a table in [EVAL.md](EVAL.md#what-was-tested-and-what-wasnt), with how each gap would be measured.
 - The model's own confidence is not calibrated (see "dupler" above). The review threshold (0.75) needs tuning on real slips.
 - Location matching handles prefixes ("Pierce Lib") but not arbitrary abbreviations ("Davis Sci Ctr" still warns).
 - Offline OCR (e.g. Tesseract) was not used; it performs poorly on handwriting.
 
-## Time, AI use and prior work
+## How this was built (AI use)
 
-**Time spent: about 4.5 hours in total, over the 4-hour guideline.** Split so the in-scope
-work can be judged on its own:
-
-| Within about the first 3.5 hours (the brief's prototype) | After, beyond the time limit |
-|---|---|
-| Rule-based validator with all checks, sample data, CLI, tests | Shift log and posting to the mocked inventory |
-| Photo reading (live and mock), confidence-gated human review | Data tab |
-| Web UI showing the slip with one-click answers | Impact estimate (CLI and tab) and accounting CSV |
-| Representative and invalid-input cases | Larger dataset (60 parts, 30 W/Os, 20 slips) |
-
-I went past the limit on the shift log and the estimate because a claim that the check saves
-time needed something to back it. Both are labeled as estimated where they estimate.
-
-**AI use.** Built with Claude Code (Claude) as a pair programmer: scaffolding, most of the
+Built with Claude Code (Claude) as a pair programmer: scaffolding, most of the
 code, the UI, and drafting this README. The problem, the storeroom facts and every observed
 number come from my own work in the storeroom; the AI did not supply them. How I checked its
 output:
 - ran every sample slip and compared each report with the failure it was written to show;
 - drove the web UI in a real browser (scripted with Playwright) through the full demo path and at phone width;
-- a test suite for every rule, the API, the shift log and the impact model;
+- a test suite for every rule, the API, the shift log, receiving, the evaluation harness and the adversarial suite;
+- an evaluation with a frozen held-out set and an adversarial suite whose expected outcomes were written before the code ran;
 - corrected it where its assumptions did not fit my storeroom (for example, who parts are
   charged to is unknown to me, so it is left out, and receiving call-backs are not counted as savings).
-
-**Prior work reused:** none; written for this case study.
 
 ## What I would investigate next
 

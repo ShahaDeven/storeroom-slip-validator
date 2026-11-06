@@ -21,7 +21,7 @@ const GROUPS: { title: string; items: { view: View; label: string; hint: string 
     title: 'Does it hold up?',
     items: [
       { view: 'adversarial', label: 'Adversarial suite', hint: 'Cases built to break it' },
-      { view: 'impact', label: 'Impact (estimated)', hint: 'Time and cost, modeled' },
+      { view: 'impact', label: 'Impact (modeled)', hint: 'A model, not measured' },
     ],
   },
 ]

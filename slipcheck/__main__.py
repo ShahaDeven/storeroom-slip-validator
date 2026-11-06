@@ -117,7 +117,8 @@ def cmd_eval(args: argparse.Namespace) -> int:
             print(evaluation.format_sweep(evaluation.sweep_thresholds(args.split)))
             return 0
         report = evaluation.run(args.split, live=args.live, max_calls=args.max_calls,
-                                confirm_frozen=args.confirm_frozen, rerun=args.rerun, corrected=args.corrected)
+                                confirm_frozen=args.confirm_frozen, rerun=args.rerun, corrected=args.corrected,
+                                rescore=args.rescore)
     except evaluation.EvalRefused as e:
         print(f"Refused: {e}", file=sys.stderr)
         return 2
@@ -193,6 +194,8 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--rerun", action="store_true", help="held-out only: reproduce an earlier run")
     e.add_argument("--corrected", action="store_true",
                    help="re-score cached readings with data/eval/corrections.json applied (no API calls, separate results file)")
+    e.add_argument("--rescore", action="store_true",
+                   help="re-score a locked run's cached readings to add later metrics (no API calls, separate results file)")
     e.add_argument("--sweep", action="store_true", help="re-score cached readings at several review thresholds (dev only, no API calls)")
     e.add_argument("--json", action="store_true")
     e.set_defaults(fn=cmd_eval)

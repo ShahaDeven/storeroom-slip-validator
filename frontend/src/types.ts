@@ -299,3 +299,31 @@ export interface AdvSuite {
   got_in: number
   cases: AdvCase[]
 }
+
+// ------------------------------------------------------------ evaluation (measured, from saved results)
+
+export interface Prop {
+  k: number
+  n: number
+  rate: number | null
+  ci95: [number, number]
+}
+
+export interface EvalSplit {
+  slips: number
+  review_rate: Prop
+  unnecessary_review: Prop
+  critical_fields_correct: Prop
+  reaches_posting: {
+    slips_with_wrong_critical_value: Prop
+    slips_with_any_wrong_value: Prop
+    warned_only: number
+  } | null
+  commit: string | null
+}
+
+export interface EvalSummary {
+  dev: EvalSplit | null
+  heldout_locked: EvalSplit | null
+  heldout_corrected: EvalSplit | null
+}

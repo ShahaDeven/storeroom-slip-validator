@@ -1,5 +1,5 @@
 import type {
-  AdvSuite, DataView, EvalSummary, FailureAnalysis, Impact, Meta, Posting, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Report, Sample,
+  AdvSuite, DataView, EvalSlipDetail, EvalSummary, FailureAnalysis, Impact, Meta, Posting, ReceiptPosting, ReceiptSample, ReceivingReport, ReceivingSummary, Report, Sample,
   SampleData, ShiftLog, Slip,
 } from './types'
 
@@ -49,6 +49,15 @@ export const api = {
       body: JSON.stringify({ likely }),
     }).then(json<Impact>),
   failures: (split: string) => fetch(`/api/eval/failures?split=${encodeURIComponent(split)}`).then(json<FailureAnalysis>),
+  evalSlip: (split: string, slip: string) =>
+    fetch(`/api/eval/slip?split=${encodeURIComponent(split)}&slip=${encodeURIComponent(slip)}`).then(json<EvalSlipDetail>),
+  /** Check a slip with a named rule set, without recording it in the shift log. */
+  validateWith: (slip: Slip, ruleset: string) =>
+    fetch('/api/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slip, ruleset }),
+    }).then(json<Report>),
   evalSummary: () => fetch('/api/eval/summary').then(json<EvalSummary>),
   /** Runs every adversarial case now, server-side, in throwaway ledgers. */
   adversarial: () => fetch('/api/adversarial').then(json<AdvSuite>),

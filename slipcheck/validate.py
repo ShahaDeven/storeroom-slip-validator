@@ -20,6 +20,15 @@ from rapidfuzz import fuzz, process
 from slipcheck.reference import Part, Reference, WorkOrder
 
 REVIEW_THRESHOLD = 0.75  # below this, a read is sent to a person instead of trusted
+
+# Rule sets. v1 is exactly what the evaluation froze (commit 86a55af) and is kept so the recorded
+# results still reproduce. v2 closes three gaps the adversarial suite found (S2, S3, S4):
+#   * a slip on another crew's work order blocks (NOT_ON_CREW was a warning that still posted);
+#   * a description whose size contradicts its part number blocks (3/4 written next to a 1/2 part);
+#   * a quantity read by a model must be confirmed by a person (CONFIRM_QTY): no rule can tell a
+#     plausible misread from the truth, and confidence alone was shown not to.
+RULESETS = ("v1", "v2")
+RULESET = "v2"  # what the app and CLI run
 NAME_AUTO_MATCH = 88  # fuzzy score needed to auto-resolve a name-only part...
 NAME_AUTO_GAP = 12  # ...and how far ahead of the runner-up it must be
 
@@ -65,7 +74,7 @@ CODE_KEY = {
     "PART_AMBIGUOUS": "part_name", "NAME_MATCHED": "part_name", "DUPLICATE_PART": "part_number",
     "MISSING_QTY": "qty", "BAD_QTY": "qty", "UNIT_MISMATCH": "unit", "UNIT_REMAINDER": "unit",
     "UNIT_CONVERTED": "unit", "UNIT_ASSUMED": "unit", "UNIT_AMBIGUOUS": "unit",
-    "EXCEEDS_ON_HAND": "qty", "UNUSUAL_QTY": "qty",
+    "EXCEEDS_ON_HAND": "qty", "UNUSUAL_QTY": "qty", "CONFIRM_QTY": "qty",
 }
 
 
@@ -211,7 +220,7 @@ def _wo_choices(alts: list[WorkOrder], confirmed: bool, move: bool = False) -> t
     return [label(w) for w in alts], [_wo_fix(w) for w in alts]
 
 
-def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue]
+def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue], ruleset: str = RULESET
                      ) -> tuple[WorkOrder | None, str | None]:
     f = as_field(slip.get("wo_number"))
     taken_by = as_field(slip.get("taken_by")).value
@@ -256,9 +265,22 @@ def check_work_order(slip: dict, ref: Reference, today: date, issues: list[Issue
                             f"Slip says '{location}' but {wo.wo_number} is at {wo.location}.", CREW,
                             fixes=[_fix(f"Use {wo.location}", location=wo.location)]))
     if taken_by and not _is_member(str(taken_by), wo):
-        issues.append(Issue(WARN, "NOT_ON_CREW", "taken_by",
-                            f"'{taken_by}' is not listed on {wo.crew} for {wo.wo_number} "
-                            f"({', '.join(wo.members)}).", DESK))
+        listed = f"'{taken_by}' is not listed on {wo.crew} for {wo.wo_number} ({', '.join(wo.members)})."
+        if ruleset == "v1":
+            issues.append(Issue(WARN, "NOT_ON_CREW", "taken_by", listed, DESK))
+        elif slip.get("crew_confirmed"):
+            issues.append(Issue(INFO, "CREW_CONFIRMED", "taken_by",
+                                f"{listed} Confirmed by a person: they are working on this job.", DESK))
+        else:
+            # The pull would be charged to another crew's job. Either the W/O number is wrong (often a
+            # misread digit) or the person really is helping; a person decides which.
+            alts, confirmed = _open_alternatives(ref, str(taken_by), None, None)
+            suggestions, fixes = _wo_choices(alts, confirmed, move=True)
+            issues.append(Issue(BLOCK, "NOT_ON_CREW", "taken_by",
+                                f"{listed} Posting would charge these parts to {wo.crew}'s job.", CREW,
+                                suggestions + [f"{taken_by} is helping on {wo.wo_number}"],
+                                fixes + [_fix(f"Confirmed: {taken_by} is working on {wo.wo_number}",
+                                              crew_confirmed=True)]))
     return wo, wo.wo_number
 
 
@@ -344,7 +366,25 @@ def _cand(part: Part, score: float) -> str:
     return f"{part.part_number} {part.name} [aisle {part.aisle}] (match {score:.0f})"
 
 
-def resolve_part(item: dict, n: int, ref: Reference, issues: list[Issue]) -> Part | None:
+_FRACTION = re.compile(r"(\d+)[- ](\d+/\d+)|(\d+/\d+)")
+_DIMS = re.compile(r"(\d+)\s*x\s*(\d+)")
+_AMPS = re.compile(r"\b(\d+)\s*a\b")
+
+
+def sizes(text: str) -> set[str]:
+    """Size tokens a description commits to: 3/4, 1-1/2, 20x20, 20a. Units and order don't matter."""
+    t = str(text or "").lower()
+    out = {f"{m.group(1)}-{m.group(2)}" if m.group(1) else m.group(3) for m in _FRACTION.finditer(t)}
+    out |= {f"{a}x{b}" for a, b in _DIMS.findall(t)}
+    out |= {f"{a}a" for a in _AMPS.findall(t)}
+    return out
+
+
+def _part_sizes(part: Part) -> set[str]:
+    return set().union(*(sizes(x) for x in (part.name, *part.aliases)))
+
+
+def resolve_part(item: dict, n: int, ref: Reference, issues: list[Issue], ruleset: str = RULESET) -> Part | None:
     where = f"line {n}"
     pn_f, name_f = as_field(item.get("part_number")), as_field(item.get("part_name"))
     for label, f in (("part_number", pn_f), ("part_name", name_f)):
@@ -377,6 +417,19 @@ def resolve_part(item: dict, n: int, ref: Reference, issues: list[Issue]) -> Par
                     "Which one did the crew take?", CREW,
                     [_cand(part, score)] + [_cand(p, s) for p, s in best],
                     [_part_fix(part)] + [_part_fix(p) for p, _ in best if p is not part]))
+            elif ruleset != "v1":
+                written, listed = sizes(str(name_f.value)), _part_sizes(part)
+                if written and listed and not (written & listed):
+                    # Same words, different size: the number may be one digit off a real neighbour.
+                    fits = [(p, s) for p, s in match_part_name(str(name_f.value), ref, limit=6)
+                            if p is not part and written & _part_sizes(p)]
+                    size = ", ".join(sorted(written))
+                    issues.append(Issue(
+                        BLOCK, "NAME_NUMBER_MISMATCH", where,
+                        f"The description says {size}, but {part.part_number} is {part.name}. "
+                        "Which one did the crew take?", CREW,
+                        [_cand(part, score)] + [_cand(p, s) for p, s in fits[:2]],
+                        [_part_fix(part)] + [_part_fix(p) for p, _ in fits[:2]]))
         return part
 
     if name_f.empty:
@@ -413,7 +466,12 @@ def parse_qty(value: Any) -> float | None:
         return None
 
 
-def check_qty(item: dict, n: int, part: Part | None, issues: list[Issue]
+def model_read(f: Field) -> bool:
+    """Read by a model rather than typed: it carries a confidence below 1, or a vision source."""
+    return f.confidence < 1.0 or (f.source or {}).get("method") == "vision"
+
+
+def check_qty(item: dict, n: int, part: Part | None, issues: list[Issue], ruleset: str = RULESET
               ) -> tuple[float | None, str | None]:
     """Return (quantity in the catalog's unit of issue, that unit)."""
     where = f"line {n}"
@@ -430,6 +488,11 @@ def check_qty(item: dict, n: int, part: Part | None, issues: list[Issue]
         issues.append(Issue(BLOCK, "BAD_QTY", where,
                             f"Quantity '{qf.value}' is not a whole positive number.", CREW))
         return None, None
+    if ruleset != "v1" and model_read(qf) and not qf.unsure:  # an unsure read is already in review
+        issues.append(Issue(BLOCK, "CONFIRM_QTY", f"{where} qty",
+                            f"Quantity {qty:g} was read by the model (confidence {qf.confidence:.2f}). A plausible "
+                            "misread passes every rule, so a person confirms it against the paper slip.", DESK,
+                            fixes=[_fix(f"The paper says {qty:g}", qty=int(qty))]))
     if part is None:
         return qty, None
 
@@ -498,7 +561,7 @@ def _review(where: str, f: Field) -> Issue:
                  "Check against the paper slip; not guessed.", DESK)
 
 
-def validate(slip: Any, ref: Reference, today: date | None = None) -> Report:
+def validate(slip: Any, ref: Reference, today: date | None = None, ruleset: str = RULESET) -> Report:
     if not isinstance(slip, dict):
         raise InvalidSlip(f"Expected a slip object, got {type(slip).__name__}.")
     known = {"wo_number", "date", "taken_by", "location", "items", "signature"}
@@ -508,7 +571,9 @@ def validate(slip: Any, ref: Reference, today: date | None = None) -> Report:
     today = today or date.today()
     issues: list[Issue] = []
 
-    wo, wo_number = check_work_order(slip, ref, today, issues)
+    if ruleset not in RULESETS:
+        raise ValueError(f"Unknown rule set '{ruleset}' (one of {', '.join(RULESETS)}).")
+    wo, wo_number = check_work_order(slip, ref, today, issues, ruleset)
     slip_date = check_header(slip, wo, today, issues)
 
     items = slip.get("items") or []
@@ -522,8 +587,8 @@ def validate(slip: Any, ref: Reference, today: date | None = None) -> Report:
         if not isinstance(item, dict):
             issues.append(Issue(BLOCK, "BAD_LINE", f"line {n}", f"Unreadable line: {item!r}", DESK))
             continue
-        part = resolve_part(item, n, ref, issues)
-        qty, unit = check_qty(item, n, part, issues)
+        part = resolve_part(item, n, ref, issues, ruleset)
+        qty, unit = check_qty(item, n, part, issues, ruleset)
         if part is not None:
             if part.part_number in seen:
                 issues.append(Issue(WARN, "DUPLICATE_PART", f"line {n}",

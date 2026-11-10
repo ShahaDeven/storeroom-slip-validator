@@ -79,9 +79,17 @@ def test_wrong_location_warns(ref):
     assert "LOCATION_MISMATCH" in codes(r, "warn")
 
 
-def test_taker_not_on_crew_warns(ref):
+def test_taker_not_on_crew_warned_in_v1_and_blocks_in_v2(ref):
+    assert "NOT_ON_CREW" in codes(validate(slip(taken_by="S. Chen"), ref, TODAY, ruleset="v1"), "warn")
     r = validate(slip(taken_by="S. Chen"), ref, TODAY)
-    assert "NOT_ON_CREW" in codes(r, "warn")
+    i = next(i for i in r.issues if i.code == "NOT_ON_CREW")
+    assert i.severity == "block" and r.status == "BLOCKED"
+    assert any(f["set"] == {"crew_confirmed": True} for f in i.fixes)  # a person can confirm they are helping
+
+
+def test_a_confirmed_helper_posts_with_the_confirmation_recorded(ref):
+    r = validate(slip(taken_by="S. Chen") | {"crew_confirmed": True}, ref, TODAY)
+    assert r.status != "BLOCKED" and "CREW_CONFIRMED" in codes(r)
 
 
 # ------------------------------------------------------------ units
@@ -258,7 +266,7 @@ def test_new_samples_land_where_designed(ref):
     expected = {
         "13_custodial_restock.json": ("READY", set()),
         "14_ear_plugs_in_pieces.json": ("READY", set()),
-        "15_not_on_crew.json": ("READY_WITH_WARNINGS", {"NOT_ON_CREW"}),
+        "15_not_on_crew.json": ("BLOCKED", {"NOT_ON_CREW"}),  # a warning in rules v1
         "16_wrong_building.json": ("READY_WITH_WARNINGS", {"LOCATION_MISMATCH"}),
         "17_name_contradicts_number.json": ("BLOCKED", {"NAME_NUMBER_MISMATCH"}),
         "18_same_part_twice.json": ("READY_WITH_WARNINGS", {"DUPLICATE_PART"}),
@@ -322,3 +330,46 @@ def test_nothing_to_go_on_means_no_suggestions(ref):
     r = validate(slip(wo_number="", taken_by=None, location=None), ref, TODAY)
     issue = _wo_issue(r, "MISSING_WO")
     assert issue.suggestions == [] and issue.fixes == []
+
+
+
+# ------------------------------------------------------------ rules v2 (gaps found by the adversarial suite)
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("3/4 pvc elbow", {"3/4"}), ("P-Trap 1-1/2 in PVC", {"1-1/2"}), ("1 1/2 p trap", {"1-1/2"}),
+    ("Air Filter 20x20x2 MERV 8", {"20x20"}), ("20 x 20 filter", {"20x20"}), ("20a outlet", {"20a"}),
+    ("wax ring", set()),
+])
+def test_size_tokens(text, expected):
+    from slipcheck.validate import sizes
+    assert sizes(text) == expected
+
+
+def test_a_size_that_contradicts_the_part_number_blocks(ref):
+    """PL-1002 is the 1/2 elbow; the description says 3/4 (adversarial case S4)."""
+    r = validate(slip(items=[item(part_number="PL-1002", part_name="3/4 pvc elbow")]), ref, TODAY)
+    i = next(i for i in r.issues if i.code == "NAME_NUMBER_MISMATCH")
+    assert i.severity == "block" and any(f["set"].get("part_number") == "PL-1001" for f in i.fixes)
+    v1 = validate(slip(items=[item(part_number="PL-1002", part_name="3/4 pvc elbow")]), ref, TODAY, ruleset="v1")
+    assert "NAME_NUMBER_MISMATCH" not in codes(v1)
+
+
+def test_a_matching_size_or_no_size_is_not_flagged(ref):
+    for name in ("3/4 pvc elbow", "pvc elbow"):
+        r = validate(slip(items=[item(part_number="PL-1001", part_name=name)]), ref, TODAY)
+        assert "NAME_NUMBER_MISMATCH" not in codes(r), name
+
+
+def test_a_model_read_quantity_needs_confirming_and_a_typed_one_does_not(ref):
+    read = validate(slip(items=[item(qty={"value": "9", "raw": "9", "confidence": 0.95})]), ref, TODAY)
+    i = next(i for i in read.issues if i.code == "CONFIRM_QTY")
+    assert i.severity == "block" and i.key == "qty" and i.fixes[0]["set"] == {"qty": 9}
+    assert "CONFIRM_QTY" not in codes(validate(slip(items=[item(qty=9)]), ref, TODAY))
+    assert "CONFIRM_QTY" not in codes(validate(slip(items=[item(qty={"value": "9", "confidence": 0.95})]),
+                                           ref, TODAY, ruleset="v1"))
+
+
+def test_unknown_ruleset_is_refused(ref):
+    with pytest.raises(ValueError):
+        validate(slip(), ref, TODAY, ruleset="v9")

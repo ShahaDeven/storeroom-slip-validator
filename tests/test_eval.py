@@ -248,3 +248,19 @@ def test_rescore_needs_a_locked_run(tmp_path, monkeypatch):
     monkeypatch.setattr(ev, "LOCK", tmp_path / "no_lock.json")
     with pytest.raises(ev.EvalRefused, match="not been run"):
         ev.run("heldout", rescore=True)
+
+
+
+# ------------------------------------------------------------ rule sets
+
+
+def test_frozen_v1_is_the_default_and_v2_stops_the_confident_quantity(ref):
+    v1 = ev.evaluate_slip(row(), reading(qty=("9", 0.95)), ref)
+    v2 = ev.evaluate_slip(row(), reading(qty=("9", 0.95)), ref, ruleset="v2")
+    assert v1.outcome == "misread_not_caught" and v2.outcome == "misread_caught"
+    assert wrong(v2)[0].new_block and v2.person_needed
+
+
+def test_v2_on_heldout_is_only_a_labelled_rescore():
+    with pytest.raises(ev.EvalRefused, match="written after"):
+        ev.run("heldout", confirm_frozen=True, ruleset="v2")

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
-import type { Fate, FailureAnalysis, FailureGroup, Prop } from '../types'
+import type { Fate, FailureAnalysis, FailureGroup, Prop, Slip } from '../types'
+import { EvalInspector, type InspectTarget } from './EvalInspector'
 
 const FATE: Record<Fate, { label: string; swatch: string; text: string }> = {
   stopped: { label: 'Stopped (review or block)', swatch: 'bg-mark-ok', text: 'text-stamp' },
@@ -13,8 +14,15 @@ const pct = (p: Prop) => (p.rate === null ? 'n/a' : `${Math.round(p.rate * 100)}
 const frac = (p: { k: number; n: number }) => `${p.k}/${p.n}`
 
 /** Where reading + rules go wrong, from the saved evaluation results. Nothing is re-run. */
-export function FailureView({ onAdversarial }: { onAdversarial: () => void }) {
+export function FailureView({
+  onAdversarial,
+  onOpenInCounter,
+}: {
+  onAdversarial: () => void
+  onOpenInCounter: (name: string, slip: Slip, photo: string) => void
+}) {
   const [split, setSplit] = useState('heldout_corrected')
+  const [inspect, setInspect] = useState<InspectTarget | null>(null)
   const [data, setData] = useState<FailureAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,11 +70,15 @@ export function FailureView({ onAdversarial }: { onAdversarial: () => void }) {
         </div>
       </header>
 
-      {split !== 'heldout_corrected' && split !== 'dev' && (
+      {data.note && (
         <p className="max-w-3xl rounded-md border-l-4 border-amber bg-steel-3 px-4 py-2 text-sm">
-          The locked run includes two photos saved under each other's names (H02/H03). Their "misreads" are each
-          other's answers, so this view overstates reading errors on those two slips. The corrected view fixes only
-          that; see EVAL.md.
+          <b>Rules {data.ruleset}. </b>
+          {data.note}
+        </p>
+      )}
+      {!data.note && (
+        <p className="text-sm text-graphite-2">
+          Scored with rules {data.ruleset}, {data.ruleset === 'v1' ? 'the rules frozen for the evaluation' : 'the current rules'}.
         </p>
       )}
 
@@ -78,7 +90,12 @@ export function FailureView({ onAdversarial }: { onAdversarial: () => void }) {
           bad={t.posting_wrong_critical.k > 0}
         />
         <Tile value={frac(t.posting_wrong_any)} label="slips that would post any wrong value" note="names, dates and places included" bad={t.posting_wrong_any.k > 0} />
-        <Tile value={frac(t.slips_reviewed)} label="slips that needed a person" note={`${pct(t.slips_reviewed)} review load`} bad={false} />
+        <Tile
+          value={frac(t.person_needed)}
+          label="slips that needed a person"
+          note={`${frac(t.slips_reviewed)} for a low-confidence read; the rest for a block a correct reading wouldn't have`}
+          bad={false}
+        />
         <Tile
           value={frac(t.confident_wrong)}
           label="fields read at 0.90+ that were wrong"
@@ -117,12 +134,12 @@ export function FailureView({ onAdversarial }: { onAdversarial: () => void }) {
           sub="Sorted: what would be posted first. A description next to a part number is not stored (the entry uses the catalog name)."
           wide
         >
-          <MissTable rows={data.misses} kinds={data.miss_kinds} />
+          <MissTable rows={data.misses} kinds={data.miss_kinds} onInspect={(r) => setInspect({ split, slip: r.slip, name: r.name, line: r.line })} />
         </Panel>
 
         <Panel
-          title="False positives: correct reads that still stopped someone"
-          sub={`${frac(data.unnecessary_reviews)} correctly read fields (${pct(data.unnecessary_reviews)}) were sent to review anyway.`}
+          title="False positives: correct reads that were flagged"
+          sub={`${data.false_positive_totals.reviews + data.false_positive_totals.rule_blocks} stopped someone (${data.false_positive_totals.reviews} low-confidence reviews, ${data.false_positive_totals.rule_blocks} rule blocks). ${data.false_positive_totals.rule_warnings} more were only warnings, which don't stop posting.`}
         >
           <FalsePositives rows={data.false_positives} />
         </Panel>
@@ -170,6 +187,16 @@ export function FailureView({ onAdversarial }: { onAdversarial: () => void }) {
           </table>
         </Panel>
       </div>
+      {inspect && (
+        <EvalInspector
+          target={inspect}
+          onClose={() => setInspect(null)}
+          onOpenInCounter={(name, slip, photo) => {
+            setInspect(null)
+            onOpenInCounter(name, slip, photo)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -320,7 +347,15 @@ function ConfidenceChart({ c }: { c: FailureAnalysis['confidence'] }) {
   )
 }
 
-function MissTable({ rows, kinds }: { rows: FailureAnalysis['misses']; kinds: FailureAnalysis['miss_kinds'] }) {
+function MissTable({
+  rows,
+  kinds,
+  onInspect,
+}: {
+  rows: FailureAnalysis['misses']
+  kinds: FailureAnalysis['miss_kinds']
+  onInspect: (r: FailureAnalysis['misses'][number]) => void
+}) {
   if (!rows.length) return <p className="text-graphite-2">Every wrong value was stopped.</p>
   return (
     <div>
@@ -331,8 +366,8 @@ function MissTable({ rows, kinds }: { rows: FailureAnalysis['misses']; kinds: Fa
           </span>
         ))}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[40rem] text-sm">
+      <div className="relative overflow-x-auto">
+        <table className="w-full min-w-[46rem] text-sm">
           <thead>
             <tr className="border-b border-rail/60 text-left text-graphite-2">
               <th className="py-1.5 pr-3 font-semibold">Slip</th>
@@ -342,7 +377,10 @@ function MissTable({ rows, kinds }: { rows: FailureAnalysis['misses']; kinds: Fa
               <th className="py-1.5 pr-3 text-right font-semibold">Conf.</th>
               <th className="py-1.5 pr-3 font-semibold">Checker</th>
               <th className="py-1.5 pr-3 font-semibold">Kind</th>
-              <th className="py-1.5 font-semibold">Posted?</th>
+              <th className="py-1.5 pr-3 font-semibold">Posted?</th>
+              <th className="py-1.5 font-semibold">
+                <span className="sr-only">Evidence</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -361,7 +399,17 @@ function MissTable({ rows, kinds }: { rows: FailureAnalysis['misses']; kinds: Fa
                 <td className="py-1.5 pr-3 text-right">{r.confidence?.toFixed(2) ?? '–'}</td>
                 <td className={`py-1.5 pr-3 ${FATE[r.fate].text}`}>{r.fate === 'warned_only' ? 'warned only' : 'nothing raised'}</td>
                 <td className="py-1.5 pr-3">{r.kind}</td>
-                <td className="py-1.5 font-semibold">{r.posted ? <span className="text-redpen">yes</span> : 'no, not stored'}</td>
+                <td className="py-1.5 pr-3 font-semibold">{r.posted ? <span className="text-redpen">yes</span> : 'no, not stored'}</td>
+                <td className="py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onInspect(r)}
+                    className="cursor-pointer rounded border border-graphite/30 bg-white px-2 py-0.5 text-xs font-semibold text-graphite hover:border-graphite"
+                    aria-label={`Inspect ${r.slip} ${r.field}: photo and evidence`}
+                  >
+                    Inspect
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -372,35 +420,52 @@ function MissTable({ rows, kinds }: { rows: FailureAnalysis['misses']; kinds: Fa
 }
 
 function FalsePositives({ rows }: { rows: FailureAnalysis['false_positives'] }) {
-  if (!rows.length) return <p className="text-graphite-2">No correctly read field was stopped.</p>
-  const max = Math.max(1, ...rows.map((r) => r.reviews + r.rule_flags))
+  if (!rows.length) return <p className="text-graphite-2">No correctly read field was flagged.</p>
+  const max = Math.max(1, ...rows.map((r) => r.reviews + r.rule_blocks + r.rule_warnings))
+  const SERIES = [
+    { key: 'reviews', label: 'Review (stops posting)', cls: 'bg-graphite' },
+    { key: 'rule_blocks', label: 'Rule block (stops posting)', cls: 'bg-mark-bad' },
+    { key: 'rule_warnings', label: "Warning only (doesn't stop)", cls: 'bg-mark-warn' },
+  ] as const
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-x-4 text-sm text-graphite-2">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded-sm bg-graphite" aria-hidden /> Sent to review (low confidence)
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded-sm bg-rail" aria-hidden /> New rule flag
-        </span>
+      <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-graphite-2">
+        {SERIES.map((x) => (
+          <span key={x.key} className="inline-flex items-center gap-1.5">
+            <span className={`inline-block size-3 rounded-sm ${x.cls}`} aria-hidden /> {x.label}
+          </span>
+        ))}
       </div>
       <ul className="space-y-2">
         {rows.map((r) => (
-          <li key={r.field} className="grid grid-cols-[7.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-sm">
+          <li key={r.field} className="grid grid-cols-[7.5rem_minmax(0,1fr)_6rem] items-center gap-2 text-sm">
             <span className="font-semibold">{r.label}</span>
-            <span className="flex h-4 gap-[2px]" role="img" aria-label={`${r.label}: ${r.reviews} reviews, ${r.rule_flags} rule flags`}>
-              {r.reviews > 0 && <span className="h-full rounded-l bg-graphite last:rounded-r" style={{ width: `${(r.reviews / max) * 100}%` }} />}
-              {r.rule_flags > 0 && <span className="h-full rounded-r bg-rail first:rounded-l" style={{ width: `${(r.rule_flags / max) * 100}%` }} />}
+            <span
+              className="flex h-4 gap-[2px]"
+              role="img"
+              aria-label={`${r.label}: ${r.reviews} reviews, ${r.rule_blocks} rule blocks, ${r.rule_warnings} warnings`}
+            >
+              {SERIES.map((x) =>
+                r[x.key] > 0 ? (
+                  <span
+                    key={x.key}
+                    title={`${x.label}: ${r[x.key]}`}
+                    className={`h-full first:rounded-l last:rounded-r ${x.cls}`}
+                    style={{ width: `${(r[x.key] / max) * 100}%` }}
+                  />
+                ) : null,
+              )}
             </span>
             <span className="text-right text-graphite-2">
-              {r.reviews} · {r.rule_flags}
+              {r.reviews} · {r.rule_blocks} · {r.rule_warnings}
             </span>
           </li>
         ))}
       </ul>
       <p className="mt-3 text-sm text-graphite-2">
-        A rule flag on a correctly read field usually comes from a misread elsewhere on the slip (for example a W/O
-        checked against a misread name).
+        Counts are review · block · warning. A rule flag on a correctly read field usually comes from a misread
+        elsewhere on the slip (a W/O checked against a misread name). Under rules v2, quantity confirmations are rule
+        blocks on correctly read quantities: that is their cost.
       </p>
     </div>
   )

@@ -248,7 +248,14 @@ export default function App() {
         <div className="min-w-0">
       {view === 'failures' ? (
         <div className="mt-6">
-          <FailureView onAdversarial={() => setView('adversarial')} />
+          <FailureView
+            onAdversarial={() => setView('adversarial')}
+            onOpenInCounter={(name, evalSlip, photo) => {
+              setSelected(null)
+              open(name, evalSlip, photo)
+              setView('counter')
+            }}
+          />
         </div>
       ) : view === 'adversarial' ? (
         <div className="mt-6">

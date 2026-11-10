@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-06T18:30:44.238Z",
         "reason": "Claude: the locked-run caveat uses the app's existing note convention (amber left edge, same as the Impact tab note and the Rejected box); matches the earlier ReceivingView exception"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/components/EvalInspector.tsx"
+        ],
+        "createdAt": "2026-11-10T15:04:21.524Z",
+        "reason": "Claude: severity edge (red = block, amber = warning) on issue items, the same convention as the Counter and Receiving question cards and the earlier ReceivingView/FailureView exceptions"
       }
     ]
   }

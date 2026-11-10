@@ -1,7 +1,8 @@
 {
   "split": "dev",
-  "run_at": "2026-11-06T13:11:38",
-  "commit": "84456a1c1afc70622edaac4686aad61ffaf31503",
+  "ruleset": "v1",
+  "run_at": "2026-11-10T09:44:07",
+  "commit": "fbd4df5023459ef5ca2226d9d5fcd4a2aeabd2b1",
   "uncommitted_tracked_changes": true,
   "live_calls_this_run": 0,
   "tokens_across_all_readings": {
@@ -132,6 +133,15 @@
       ]
     },
     "review_rate": {
+      "k": 5,
+      "n": 10,
+      "rate": 0.5,
+      "ci95": [
+        0.237,
+        0.763
+      ]
+    },
+    "person_needed_rate": {
       "k": 5,
       "n": 10,
       "rate": 0.5,
@@ -597,7 +607,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "D02",
@@ -817,7 +828,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "D03",
@@ -1014,7 +1026,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "D04",
@@ -1211,7 +1224,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "D05",
@@ -1615,7 +1629,8 @@
             "line": 3
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "D06",
@@ -1927,7 +1942,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "D07",
@@ -2216,7 +2232,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "D08",
@@ -2528,7 +2545,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "slip_clean",
@@ -2840,7 +2858,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "slip_hard_case",
@@ -3083,7 +3102,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": false
     }
   ]
 }

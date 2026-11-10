@@ -33,6 +33,7 @@ from slipcheck.validate import BLOCK, INFO, validate
 
 TODAY = date(2026, 11, 6)  # fixed, so dates on the cases never drift into "future" or "stale"
 STOPPED = {"blocked", "needs_review", "refused"}
+FIXED = "This case got in when the suite was first run (rules v1). "  # prefix for fixed cases
 
 
 def f(value: Any, confidence: float = 1.0) -> dict:
@@ -158,12 +159,43 @@ CASES: list[Case] = [
          [Step("receipt", "R-20701.png", receipt("R-20701", "PO-26-1101", "Northline Supply",
                                                 [line("PL-1010", "ball valve 3/4", 12, "ea", qty_conf=0.97)]),
                "Submit the reading: 12 valves at 0.97 (the paper says 2)")],
-         "blocked", [],
-         "The right outcome is that 10 valves that never arrived are not received.",
-         known_gap="Not caught. 12 is a believable quantity: it is exactly what is open on the PO, so no rule "
-                   "contradicts it, and the confidence is above the 0.75 review threshold. Six held-out slip fields "
-                   "were read wrong at 0.90 or above (EVAL.md). Closing this needs a second source for the count "
-                   "(a packing list, an advance ship notice, or a count at put-away), not a better threshold."),
+         "blocked", ["BLIND_COUNT"],
+         "12 is exactly what is open on the PO, so no rule can contradict it, and 0.97 is above any sensible "
+         "threshold. The only independent source is the goods: a person counts them before the receipt posts.",
+         history=FIXED + "A quantity a model read from an image now needs a blind count (BLIND_COUNT); "
+                         "a count that differs from the reading blocks (case A10)."),
+    Case("A9", "receiving", "A photographed receipt whose count matches the reading",
+         "The model reads 12 ball valves at 0.97, and the person counting at the dock also counts 12.",
+         [Step("receipt", "R-20901.png", receipt("R-20901", "PO-26-1101", "Northline Supply",
+                                                [line("PL-1010", "ball valve 3/4", 12, "ea", qty_conf=0.97)
+                                                 | {"counted": f(12)}]),
+               "Submit the reading with a count of 12")],
+         "posted_with_warnings", ["COUNT_MATCHES"],
+         "The blind count is not a blanket block: once the goods are counted and agree, the receipt goes in. "
+         "(The warnings are the PO's other two lines, still open.)"),
+    Case("A10", "receiving", "The count disagrees with the reading",
+         "The model reads 12 ball valves; the dock counts 2.",
+         [Step("receipt", "R-21001.png", receipt("R-21001", "PO-26-1101", "Northline Supply",
+                                                [line("PL-1010", "ball valve 3/4", 12, "ea", qty_conf=0.97)
+                                                 | {"counted": f(2)}]),
+               "Submit the reading with a count of 2")],
+         "blocked", ["COUNT_MISMATCH"],
+         "A count that disagrees with the reading stops the receipt; the answer offered is to receive what was counted."),
+    Case("A11", "receiving", "The same delivery re-keyed with a new number and a different date",
+         "10 of 30 15A outlets are posted as R-20102 on 10/26. The same delivery is keyed in again as R-20199, "
+         "dated 10/27.",
+         [Step("receipt", "R-20102.pdf", receipt("R-20102", "PO-26-1102", "Ridgeway Electric",
+                                                [line("EL-2011", "15a outlet", 10, "ea")]),
+               "Post R-20102: 10 of 30 15A outlets, dated 10/26"),
+          Step("receipt", "R-20199.pdf", receipt("R-20199", "PO-26-1102", "Ridgeway Electric",
+                                                [line("EL-2011", "15a outlet", 10, "ea")], when="10/27/26"),
+               "Submit R-20199: the same 10 outlets, dated a day later")],
+         "blocked", ["POSSIBLE_DUPLICATE"],
+         "If it is a duplicate, 10 outlets are counted twice.",
+         known_gap="Not caught. The duplicate check (A2) compares PO, date and quantities, so a different date "
+                   "makes it look like a second delivery, and 20 are still open. A real follow-up delivery of the "
+                   "same quantity looks exactly like this, so a tighter rule would block genuine deliveries. "
+                   "Closing it needs the vendor's own document number or a packing-list match."),
     Case("A8", "receiving", "An unreadable PO number on a photographed receipt",
          "The PO number on a receipt photo is smudged; the model reads 'PO-26-11?1' at confidence 0.41.",
          [Step("receipt", "R-20801.png", receipt("R-20801", "PO-26-11?1", "Northline Supply", ELBOWS_30)
@@ -184,31 +216,37 @@ CASES: list[Case] = [
          "The slip says 6 elbows. The model reads 9, at confidence 0.95.",
          [Step("slip", "rivera 9", slip([line("PL-1001", "3/4 pvc elbow", 9, "ea", qty_conf=0.95)]),
                "Submit the reading: 9 elbows at 0.95 (the paper says 6)")],
-         "blocked", [],
-         "The right outcome is that 3 elbows are not taken off the shelf that never left it.",
-         known_gap="Not caught. 9 is under the 20-per-pull limit and under on-hand, so no rule fires, and 0.95 is "
-                   "above the review threshold. This is the same failure as A7. The held-out evaluation measures how "
-                   "often it happens (EVAL.md)."),
+         "blocked", ["CONFIRM_QTY"],
+         "9 is under the 20-per-pull limit and under stock, so no rule can tell it from 6. A person confirms "
+         "every quantity the model read before the slip posts.",
+         history=FIXED + "Rules v2 make a model-read quantity a block until a person confirms it (CONFIRM_QTY). "
+                         "The cost is measured: every photographed slip now needs a person (EVAL.md)."),
     Case("S3", "slips", "One wrong digit in the work order makes a real, open work order",
          "WO-26-0412 (Plumbing A, Harlow Hall) is read as WO-26-0462, which exists: Custodial, Pierce Library.",
          [Step("slip", "rivera 0462", slip([line("PL-1001", "3/4 pvc elbow", 6, "ea")], wo="WO-26-0462"),
                "Submit the reading: WO-26-0462, read with full confidence")],
-         "blocked", [],
-         "The person and building on the slip don't belong to that work order. The pull must not post to it.",
-         known_gap="Shown, not stopped. The cross-checks notice (NOT_ON_CREW, LOCATION_MISMATCH), but both are "
-                   "warnings, and a warning does not block posting: a clerk who clicks past them books the pull to "
-                   "Custodial. EVAL.md counts this as posted in its 'would be posted' rows. Making these a block is the obvious "
-                   "fix. It is not made yet because the slip rules are frozen for the evaluation; changing them "
-                   "means a new round of development data."),
+         "blocked", ["NOT_ON_CREW"],
+         "The person on the slip is not on that work order's crew. Posting would charge the parts to another crew's job.",
+         history=FIXED + "NOT_ON_CREW was a warning, and warnings post. In rules v2 it blocks, offering the "
+                         "person's own crew's open work orders, or a recorded confirmation that they are helping "
+                         "on this job (case S6)."),
     Case("S4", "slips", "A part number one digit off, pointing at a real neighbouring part",
          "PL-1001 (3/4 elbow) is read as PL-1002 (1/2 elbow). The description still says 3/4.",
          [Step("slip", "rivera 1002", slip([line("PL-1002", "3/4 pvc elbow", 6, "ea")]),
                "Submit PL-1002 with the description '3/4 pvc elbow'")],
          "blocked", ["NAME_NUMBER_MISMATCH"],
-         "The number and the description disagree. A person picks which one is right.",
-         known_gap="Not caught. '3/4 pvc elbow' and 'PVC Elbow 90 deg 1/2 in' share most of their words, so the "
-                   "description check scores them as a match and never compares the sizes. A size-aware "
-                   "comparison (3/4 against 1/2) is the fix, held back for the same reason as S3."),
+         "The number and the description disagree on size. A person picks which one is right.",
+         history=FIXED + "The words matched ('pvc elbow'), so the sizes were never compared. Rules v2 compare "
+                         "the sizes a description commits to (3/4, 1-1/2, 20x20, 20A) with the part's."),
+    Case("S6", "slips", "Someone from another crew, confirmed as helping",
+         "J. Rivera (Plumbing A) takes parts for WO-26-0462, a Custodial job, and the clerk records that the "
+         "supervisor confirmed it.",
+         [Step("slip", "rivera helping", slip([line("PL-1001", "3/4 pvc elbow", 6, "ea")], wo="WO-26-0462",
+                                             where="Pierce Library") | {"crew_confirmed": True},
+               "Submit the slip with the confirmation recorded")],
+         "posted", ["CREW_CONFIRMED"],
+         "The new block is not a ban: with a person's confirmation on record, the pull posts, and the "
+         "confirmation is kept with it."),
     Case("S5", "slips", "A pair-tracked part with no unit",
          "Gloves are tracked in pairs. The slip says '4 gloves' with no unit.",
          [Step("slip", "rivera gloves", slip([line("GN-4001", "leather gloves l", 4, None)]),
@@ -216,6 +254,8 @@ CASES: list[Case] = [
          "blocked", ["UNIT_AMBIGUOUS"],
          "4 pairs or 2 pairs (4 gloves)? This exact error is what used to surface days later at the count."),
 ]
+
+CASES.sort(key=lambda c: (c.area != "receiving", int(c.id[1:])))  # A1..An, then S1..Sn
 
 
 # ---------------------------------------------------------------- running

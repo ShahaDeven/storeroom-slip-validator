@@ -89,6 +89,7 @@ export const MARGIN_NOTE: Record<string, string> = {
   BAD_QTY: 'how many?',
   EXCEEDS_ON_HAND: 'more than on hand',
   UNUSUAL_QTY: 'a lot',
+  CONFIRM_QTY: 'check the paper',
   LOCATION_MISMATCH: 'wrong building?',
   NOT_ON_CREW: 'not on this crew',
   DUPLICATE_PART: 'listed twice',

@@ -1,7 +1,8 @@
 {
   "split": "heldout (re-scored from the cached readings)",
-  "run_at": "2026-11-06T13:11:38",
-  "commit": "84456a1c1afc70622edaac4686aad61ffaf31503",
+  "ruleset": "v1",
+  "run_at": "2026-11-10T09:44:09",
+  "commit": "fbd4df5023459ef5ca2226d9d5fcd4a2aeabd2b1",
   "uncommitted_tracked_changes": true,
   "live_calls_this_run": 0,
   "tokens_across_all_readings": {
@@ -143,6 +144,15 @@
       "ci95": [
         0.531,
         0.888
+      ]
+    },
+    "person_needed_rate": {
+      "k": 17,
+      "n": 20,
+      "rate": 0.85,
+      "ci95": [
+        0.64,
+        0.948
       ]
     },
     "confidence_bins": [
@@ -1098,7 +1108,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H02",
@@ -1410,7 +1421,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H03",
@@ -1722,7 +1734,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H04",
@@ -2034,7 +2047,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H05",
@@ -2438,7 +2452,8 @@
             "line": 3
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "H06",
@@ -2658,7 +2673,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H07",
@@ -2947,7 +2963,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H08",
@@ -3259,7 +3276,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H09",
@@ -3548,7 +3566,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H10",
@@ -3768,7 +3787,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H11",
@@ -4080,7 +4100,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H12",
@@ -4277,7 +4298,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "H13",
@@ -4474,7 +4496,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": false
     },
     {
       "slip_id": "H14",
@@ -4786,7 +4809,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H15",
@@ -5098,7 +5122,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H16",
@@ -5502,7 +5527,8 @@
             "line": 3
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H17",
@@ -5722,7 +5748,8 @@
             "line": 1
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H18",
@@ -6034,7 +6061,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H19",
@@ -6346,7 +6374,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     },
     {
       "slip_id": "H20",
@@ -6635,7 +6664,8 @@
             "line": 2
           }
         }
-      ]
+      ],
+      "person_needed": true
     }
   ],
   "locked_summary_reproduced": {

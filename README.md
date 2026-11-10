@@ -30,8 +30,8 @@ python -m slipcheck serve         # then open http://127.0.0.1:8000
 
 **Try it (about five minutes):**
 1. **Counter:** open **Hard case: four problems** → pick *WO-26-0415* → pick a receptacle → pick
-   *1 PR* → type the name into the review box → the stamp turns to **READY TO POST** →
-   **Post to inventory**.
+   *1 PR* → type the name into the review box → *The paper says 4* (the model read that quantity,
+   so a person confirms it) → the stamp turns to **READY TO POST** → **Post to inventory**.
 2. **Evidence:** under the slip, in **Evidence for each problem**, pick *W/O number CLOSED_WO*. It
    shows the value read, the work order as the system has it (closed 2026-09-29), the rule, and
    your correction (26-0390 → WO-26-0415). Open **slip hard case** (the photo) and pick
@@ -70,11 +70,21 @@ testable, and explainable to a supervisor or an auditor.
 What that design guarantees, and what it doesn't:
 - **An uncertain read cannot post silently.** A read below 0.75 confidence is a block, and posting
   refuses anything with a block. A person has to settle it from the paper.
-- **A confident misread that no rule contradicts can post.** A "6" read as "9" at 0.95, under the
-  per-pull limit and under stock, goes through. The [evaluation](#evaluation-exploratory) and the
-  [adversarial suite](#adversarial-suite) measure how often this happens instead of hiding it;
-  closing it needs a second source for the count, not a better threshold.
-- **Warnings inform; they don't stop.** A clerk can post past one.
+- **A confident misread can't post on confidence alone.** No rule can tell a "6" read as "9" at
+  0.95 from the truth, and no threshold fixes that. So every quantity a model read must be
+  confirmed by a person (slips: `CONFIRM_QTY`) or counted (receipts read from an image: a blind
+  count, `BLIND_COUNT`). That is an independent check, and it is not free: every photographed slip
+  now needs a person.
+- **Warnings inform; they don't stop.** A clerk can post past one. Anything that would attribute a
+  transaction to the wrong record is therefore a block, not a warning (another crew's work order,
+  a size that contradicts the part number, the wrong vendor).
+- **Not guaranteed:** a person who confirms without looking, and a photo filed against the wrong
+  slip (every field is consistent with itself; see EVAL.md).
+
+**Rules v1 and v2.** The rules the evaluation froze are kept as `v1`, so the recorded results
+still reproduce. The app runs `v2`, which closes three gaps the adversarial suite found (S2, S3,
+S4). v2 was checked on the development set; on the held-out set it can only be re-scored, and that
+is labelled, because the rules were written after those slips were seen.
 
 ## Using the app
 
@@ -87,7 +97,7 @@ Adversarial suite, Impact).
 | **Counter** | The slip drawn as the paper copy, problems marked next to each field, a HOLD / READY TO POST stamp, and the questions to ask the crew with one-click answers. Answering re-checks the slip; corrections appear over the struck-through original. Drop in your own photo or JSON slip on the left. |
 | **Evidence for each problem** (under the slip on Counter, and under the receipt on Receiving) | Pick any problem, open or already answered, and see the chain behind it: (1) the document (the photo and line for a handwritten slip; a zoom on the real word box for a PDF; no invented boxes for vision reads), (2) the value read with its confidence and method, (3) the record it was checked against (the work order, catalog part, PO line or receiving history), (4) the rule in plain words and whether it blocks or only warns, (5) the clerk's correction, before and after. Evidence is built after validation (`slipcheck/evidence.py`), so it explains decisions without taking part in them. |
 | **Receiving** | A delivery receipt checked against its purchase order. The page is shown with each problem's real word box drawn on it (PDF text layer; images read by the vision model get no invented boxes). Over-shipments, pack-size questions, unordered items, duplicates and closed POs block with one-click decisions (receive the open amount, accept, return to vendor, hold for the buyer); a short delivery is a partial, not a failure, and the PO line stays open. |
-| **Failure analysis** | Where reading plus rules goes wrong, from the saved evaluation results (nothing re-run): headline numbers, a 30-second summary, misreads per field split by what the checker did (stopped, warned only, nothing raised), confidence against correctness with the review threshold, every wrong value nothing stopped, false positives, review load per slip, and results by handwriting style, photo condition and document type. Switch between held-out corrected, held-out locked and development. |
+| **Failure analysis** | Where reading plus rules goes wrong, from the saved evaluation results (nothing re-run): headline numbers, a 30-second summary, misreads per field split by what the checker did (stopped, warned only, nothing raised), confidence against correctness with the review threshold, every wrong value nothing stopped, each with an **Inspect** button that opens the original photo, the value read and its source, the answer key, and what the checker raised on that field (and can open the reading in the Counter), false positives split into reviews and blocks (which stop posting) and warnings (which don't), review load per slip, and results by handwriting style, photo condition and document type. Switch between held-out corrected, held-out locked, development, and the rules-v2 re-scores. |
 | **Adversarial suite** | Deliberately difficult cases (a duplicate under a new file name or receipt number, the right PO from the wrong supplier, partial then over deliveries, confident misreads), each with what *should* happen next to what did. They run live, through the same rules and posting code, in a throwaway ledger. Known gaps are listed first, each with why it got in and what would close it. See [Adversarial suite](#adversarial-suite). |
 | **Shift log** | What was posted (W/O, location, parts, aisles, answers given at the counter), what is on hold and why, slips waiting on a handwriting check, problems caught before the count, stock after posting, and **Download for accounting (CSV)**: one row per posted part with the cause of every correction. |
 | **Data** | Every part with start, posted and on-hand (low stock flagged), every work order with what was issued against it, and a feed of stock changes. Rows changed by the latest posting are highlighted; refreshes every few seconds. |
@@ -114,6 +124,7 @@ python -m slipcheck adversarial                                # difficult cases
 python -m slipcheck eval --split dev                           # evaluation of photo reading + rules (see EVAL below)
 python -m slipcheck eval --split heldout --corrected          # held-out result with the recorded correction (no API calls)
 python -m slipcheck eval --split heldout --rescore            # the locked run re-scored with the stricter 'would be posted' rows
+python -m slipcheck eval --split dev --ruleset v2              # the current rules (v2) on development data
 
 python -m slipcheck check data/photos/slip_hard_case.jpeg                    # photo, cached reading (no key)
 python -m slipcheck check data/photos/slip_hard_case.jpeg --live             # photo, read live (ANTHROPIC_API_KEY)
@@ -124,7 +135,8 @@ Live mode uses Claude Haiku (`SLIPCHECK_MODEL` to override), one call per slip, 
 cent each. The key can go in a `.env` file in the project folder.
 
 **What happened on the real photos** (two slips handwritten on ruled paper):
-- `slip_clean.jpeg` was read exactly and came out `READY`.
+- `slip_clean.jpeg` was read exactly. Under rules v2 it still waits for a person to confirm its two
+  quantities (`CONFIRM_QTY`), as every photographed slip does; under v1 it came out `READY`.
 - `slip_hard_case.jpeg` came out `BLOCKED` with CLOSED_WO, PART_AMBIGUOUS and UNIT_AMBIGUOUS.
 - The model misread "duplex outlet" as **"dupler outlet" at 0.80 confidence**, above the 0.75
   review threshold, so its own confidence did not flag the mistake. The rules still did: the
@@ -168,7 +180,7 @@ Buildings, crews, names, part numbers and W/O numbers are invented.
 | `12_truncated.json` | `REJECTED` (exit 2) | not valid JSON |
 | `13_custodial_restock.json` | `READY` | 4-line restock in boxes, rolls and each |
 | `14_ear_plugs_in_pieces.json` | `READY` | "10 pcs" ear plugs converted to 5 PR |
-| `15_not_on_crew.json` | `READY_WITH_WARNINGS` | NOT_ON_CREW: electrician from another crew on this W/O |
+| `15_not_on_crew.json` | `BLOCKED` | NOT_ON_CREW: electrician from another crew on this W/O; answers are their own crew's open W/Os, or a recorded confirmation that they are helping (a warning in v1) |
 | `16_wrong_building.json` | `READY_WITH_WARNINGS` | LOCATION_MISMATCH: slip says Knox Hall, W/O is Alcott Residence |
 | `17_name_contradicts_number.json` | `BLOCKED` | NAME_NUMBER_MISMATCH: "exit sign" next to a breaker's number |
 | `18_same_part_twice.json` | `READY_WITH_WARNINGS` | DUPLICATE_PART: drywall sheets on two lines |
@@ -233,13 +245,13 @@ where the value would come from, to be replaced by a timing pilot.
 
 Storeroom volumes are observed (10-20 slips a normal day, 7-8 count mismatches a week, 30-60
 minutes to chase each); most other inputs are assumed. Only the detection rate is measured: the
-real checker was run on 2,100 synthetic slips with one known error each and caught **78%** of slip
+real checker was run on 2,100 synthetic slips with one known error each and caught **79%** of slip
 errors, weighted by an assumed mix.
 
 | | Likely | Optimistic |
 |---|---|---|
-| Staff hours a week chasing mismatches (today → with check) | 5.6 → 3.8 | 8.0 → 3.2 |
-| **Staff hours saved a year** | **+91** (about $2,600) | **+242** |
+| Staff hours a week chasing mismatches (today → with check) | 5.6 → 3.8 | 8.0 → 3.1 |
+| **Staff hours saved a year** | **+92** (about $2,600) | **+244** |
 | **Pays off if at least this share of mismatches start on a slip** | **6%** | **0%** |
 
 If the model's assumptions hold, the break-even is low: about 6% of count mismatches would have
@@ -272,8 +284,8 @@ or use the Impact section to change any input.
 | Part name only | 100% (84% matched automatically and correctly, 16% sent to a person, 0% wrong) |
 | Field too unclear to read | 100% |
 | Not signed | 100% |
-| Neighbouring part number with the right name | 75% |
-| Wrong but plausible quantity | 1%: nothing on the slip contradicts it |
+| Neighbouring part number with the right name | 84% (75% under v1; v2 also compares sizes) |
+| Wrong but plausible quantity | 1%: these test slips are typed, and nothing contradicts a typed quantity. For model-read quantities, v2 requires a person to confirm every one |
 
 Limits: false alarms on clean synthetic slips are 0%, which is too clean for real handwriting;
 each slip error is assumed to cause one count mismatch; staff time only, with no part prices
@@ -306,22 +318,26 @@ not yet change on-hand stock in the Data section.
 
 ## Adversarial suite
 
-`python -m slipcheck adversarial` (and the **Adversarial suite** section) runs 13 cases built to
+`python -m slipcheck adversarial` (and the **Adversarial suite** section) runs 17 cases built to
 break the checker. Each one states the outcome it *should* have, then runs the real validator and
 the real posting step in a throwaway SQLite file, so the shift log is never touched. Current
-result: **9 as expected, 4 known gaps, 0 regressions.**
+result: **16 as expected, 1 known gap, 0 regressions.**
 
 | | Cases |
 |---|---|
-| Stopped, as they should be | the same receipt under a new file name; the same delivery under a new receipt number; right PO, wrong supplier; partial, then the rest, then one too many; a second delivery bigger than what is open; an unreadable PO number; a posted slip keyed in again; a pair-tracked part with no unit |
-| Posted correctly, with warnings | one part written in two units on one receipt (5 BX + 500 pcs) |
-| **Got in (known gaps)** | a confident wrong quantity on a receipt (A7) and on a slip (S2); a wrong W/O digit that lands on another crew's real W/O, which is only warned about (S3); a part number one digit off whose description differs only in size (S4) |
+| Stopped, as they should be | the same receipt under a new file name; the same delivery under a new receipt number; right PO, wrong supplier; partial, then the rest, then one too many; a second delivery bigger than what is open; a confident wrong quantity on a receipt image (A7) and on a slip (S2); a count that disagrees with the reading; an unreadable PO number; a posted slip keyed in again; a wrong W/O digit that lands on another crew's real job (S3); a part number one digit off, with the size in the description (S4); a pair-tracked part with no unit |
+| Goes in, as it should | one part written in two units on one receipt (5 BX + 500 pcs); a photographed receipt whose count matches; someone from another crew, confirmed as helping |
+| **Got in (known gap)** | the same delivery re-keyed with a new number **and a different date** (A11): indistinguishable from a real second delivery without the vendor's document number |
 
-Two rules exist because this suite failed when it was first run: receipts with the same PO, date
-and quantities as one already received under another number now block (`POSSIBLE_DUPLICATE`),
-and a vendor mismatch blocks instead of warning. The slip gaps (S3, S4) are not fixed yet, because
-the slip rules are frozen for the evaluation; fixing them needs a new round of development data.
-`tests/test_adversarial.py` pins the known gaps, so a gap that closes, or a new failure, shows up.
+Every fix came from this suite failing first:
+- **Receiving:** a re-keyed duplicate (same PO, date and quantities under a new number) now blocks
+  (`POSSIBLE_DUPLICATE`); a vendor mismatch blocks instead of warning; and a quantity read from an
+  image needs a blind count (`BLIND_COUNT`, `COUNT_MISMATCH`).
+- **Slips, rules v2:** another crew's work order blocks (`NOT_ON_CREW`); a size that contradicts
+  the part number blocks (`NAME_NUMBER_MISMATCH`); a model-read quantity needs a person's
+  confirmation (`CONFIRM_QTY`).
+
+`tests/test_adversarial.py` pins the known gap, so a gap that closes, or a new failure, shows up.
 
 ## Evaluation (exploratory)
 
@@ -352,6 +368,19 @@ same readings with that one fix ([evidence in EVAL.md](EVAL.md#the-correction-an
 warning doesn't count as a stop, because the slip still posts. On development data 1 of 10 slips
 would have posted a wrong critical value: a W/O misread that only raised warnings.
 
+**Rules v2 on the same readings** (`--ruleset v2`; the held-out column is *not* a held-out result,
+because v2 was written after those slips were seen):
+
+| | Development, v1 → v2 | Held-out corrected, v1 → v2 |
+|---|---|---|
+| Slips where a wrong critical value would be posted | 1/10 → **0/10** | 0/20 → 0/20 |
+| Slips where any wrong stored value would be posted | 2/10 → 1/10 | 10/20 → 8/20 |
+| **Slips that need a person** (any block a correct reading wouldn't have) | 5/10 → **10/10** | 17/20 → **20/20** |
+
+v2 trades review load for safety: every photographed slip now needs a person, mostly to confirm
+quantities. The remaining wrong values that would post are names, dates and places, which no rule
+checks against a record.
+
 What this does **not** show: performance across different people's handwriting (one writer, four
 styles), other slip layouts, or real catalogs; and nothing about time saved. A 75% review rate
 means real extra work at the counter, and processing time has not been measured. See
@@ -371,7 +400,9 @@ what would measure the rest.
 
 - What was and wasn't tested (writers, layouts, image quality, suppliers, catalogs, model) is a table in [EVAL.md](EVAL.md#what-was-tested-and-what-wasnt), with how each gap would be measured.
 - The model's own confidence is not calibrated (see "dupler" above). The review threshold (0.75) needs tuning on real slips.
-- Known gaps, pinned by the adversarial suite: a confident, plausible quantity misread posts (A7, S2); a W/O misread that lands on another crew's real work order only warns, so it can post (S3); a part number one digit off is not caught when the description differs only in size (S4).
+- Known gap, pinned by the adversarial suite: a duplicate delivery re-keyed with a new number and a different date (A11). The former gaps A7, S2, S3 and S4 are closed in rules v2; v2 has been checked on development data only, and needs a new held-out set to be measured.
+- Rules v2 require a person on every photographed slip (quantity confirmation). A person who confirms without looking defeats it; the confirmation is a forcing function, not proof.
+- A photo filed against the wrong slip passes field checks, because every field agrees with itself. A document-identity check (a slip number matched to the record) would close it.
 - Receipt reading accuracy is not evaluated: PDFs are read from the text layer, and there is no labelled set of photographed receipts.
 - Receiving does not change on-hand stock in the Data section.
 - Location matching handles prefixes ("Pierce Lib") but not arbitrary abbreviations ("Davis Sci Ctr" still warns).
@@ -396,7 +427,7 @@ output:
 2. **How soon slips are actually entered.** Catching errors "while the crew is reachable" assumes same-day entry; batch entry at week's end shrinks the benefit.
 3. Error frequency by type on real slips, to decide which checks earn their place.
 4. Photo-reading accuracy on 50+ real handwritten slips from several writers, and where to set the review threshold.
-5. **Make W/O cross-checks block instead of warn** (adversarial case S3), tested on new development data, not on the spent held-out set.
+5. **A new held-out set, from several writers,** to measure rules v2 cleanly, and the review time it adds.
 6. **A second source for quantities** (packing list, advance ship notice, count at put-away): the only way to catch a confident, plausible misread.
 7. **Three-way match.** Receiving now checks receipt against PO; adding the vendor invoice (prices) completes the match accounts payable relies on.
 
@@ -415,7 +446,9 @@ output:
 | `NAME_MATCHED` | info | auto-match only if score ≥ 88 **and** ≥ 12 ahead of the runner-up |
 | `UNKNOWN_PART`, `BAD_LINE` | block | storeroom desk |
 | `EXCEEDS_ON_HAND` | block | desk: slip or count is already wrong, recount the aisle |
-| `UNUSUAL_QTY`, `DUPLICATE_PART`, `LOCATION_MISMATCH`, `NOT_ON_CREW` | warn | |
+| `NOT_ON_CREW` | block (v2; warn in v1) | crew: their own crew's open W/Os, or confirm they are helping |
+| `CONFIRM_QTY` | block (v2) | desk: a quantity the model read, confirmed against the paper |
+| `UNUSUAL_QTY`, `DUPLICATE_PART`, `LOCATION_MISMATCH` | warn | |
 | `MISSING_SIGNATURE`, `MISSING_TAKEN_BY`, `MISSING_QTY`, `BAD_QTY` | block | crew |
 | `HUMAN_REVIEW` | block | desk: any field read with confidence < 0.75; illegible ≠ blank |
 | `MISSING_DATE`, `BAD_DATE`, `FUTURE_DATE`, `BEFORE_WO_OPENED` | warn | |
@@ -430,10 +463,11 @@ Receiving:
 | `UNORDERED_ITEM`, `NO_PART` | block | a line that matches no PO line |
 | `OVER_SHIPMENT` | block | more than is still open; decide: receive the open amount, accept, or return |
 | `UNIT_AMBIGUOUS`, `UNIT_REMAINDER`, `UNIT_MISMATCH` | block | pieces vs boxes or pairs that can't be settled exactly |
+| `BLIND_COUNT`, `COUNT_MISMATCH`, `BAD_COUNT` | block | a quantity read from an image: count the goods; a different count blocks |
 | `MISSING_RECEIVED_BY`, `MISSING_QTY`, `BAD_QTY`, `HUMAN_REVIEW` | block | |
 | `SHORT_SHIPMENT`, `LINE_NOT_DELIVERED` | warn | partial delivery; the PO line stays open |
 | `DUPLICATE_LINE`, `UNIT_ASSUMED`, `MISSING_RECEIPT_NUMBER`, `MISSING_DATE`, `BAD_DATE`, `FUTURE_DATE`, `BEFORE_PO_DATE` | warn | |
-| `UNIT_CONVERTED`, `NAME_MATCHED`, `OVER_ACCEPTED`, `SEPARATE_DELIVERY`, `LINE_RETURNED`, `LINE_HELD` | info | done automatically, or a decision recorded |
+| `UNIT_CONVERTED`, `NAME_MATCHED`, `OVER_ACCEPTED`, `SEPARATE_DELIVERY`, `COUNT_MATCHES`, `LINE_RETURNED`, `LINE_HELD` | info | done automatically, or a decision recorded |
 
 Status is `BLOCKED` if anything blocks, else `READY_WITH_WARNINGS`, else `READY`. Every code has a
 plain-language rule in `slipcheck/evidence.py`, shown in the evidence panel.

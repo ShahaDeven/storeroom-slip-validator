@@ -21,7 +21,7 @@ from slipcheck.receiving.reference import (
     POLine, PurchaseOrder, ReceivingReference, fingerprint, norm_receipt_no, normalize_po,
 )
 from slipcheck.validate import (
-    BLOCK, DESK, INFO, WARN, InvalidSlip, Issue, _fix, _norm, _review, as_field, parse_date, parse_qty,
+    BLOCK, DESK, INFO, WARN, InvalidSlip, Issue, _fix, _norm, _review, as_field, model_read, parse_date, parse_qty,
     PIECE_WORDS, UNIT_WORDS,
 )
 
@@ -297,6 +297,29 @@ def validate_receipt(reading: Any, ref: ReceivingReference, today: date | None =
         if qty is None or qty <= 0 or qty != int(qty):
             issues.append(Issue(BLOCK, "BAD_QTY", f"line {n} qty", f"Quantity '{qty_f.value}' is not a whole positive number.", DESK))
             continue
+        if model_read(qty_f):
+            # Blind count: a quantity a model read from an image is not trusted, however confident.
+            # A plausible misread (12 for 2, with 12 open on the PO) passes every rule; a count doesn't.
+            counted = as_field(item.get("counted"))
+            if counted.empty:
+                issues.append(Issue(BLOCK, "BLIND_COUNT", f"line {n} counted",
+                                    f"Line {n} ({pol.part_number}) was read from an image. Count what was delivered "
+                                    "and enter the count before receiving it.", DESK))
+                continue
+            c = parse_qty(counted.value)
+            if c is None or c < 0 or c != int(c):
+                issues.append(Issue(BLOCK, "BAD_COUNT", f"line {n} counted",
+                                    f"Count '{counted.value}' is not a whole number.", DESK))
+                continue
+            if c != qty:
+                issues.append(Issue(BLOCK, "COUNT_MISMATCH", f"line {n} qty",
+                                    f"Counted {c:g}, but the reading says {qty:g}. Receive what was counted, "
+                                    "or recount.", DESK,
+                                    [f"Receive the count: {c:g}"],
+                                    [_fix(f"Receive the count: {c:g}", qty=int(c))] if c else [_fix(EXCLUDING["hold"], disposition="hold")]))
+                continue
+            issues.append(Issue(INFO, "COUNT_MATCHES", f"line {n} qty",
+                                f"Counted {c:g}; matches the reading.", DESK))
         norm_qty, specs = _reconcile_unit(qty, None if unit_f.empty else str(unit_f.value), pol, po.open_qty(pol.part_number))
         for severity, code, message, suggestions, fixes in specs:
             issues.append(Issue(severity, code, f"line {n} unit" if code != "UNIT_ASSUMED" else f"line {n} qty",

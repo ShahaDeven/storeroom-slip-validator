@@ -42,6 +42,7 @@ def test_answering_every_question_makes_hard_case_ready(client):
     slip["taken_by"] = "A. Okafor"
     slip["items"][0] |= {"part_number": "EL-2011", "part_name": "Duplex Receptacle 15A White"}
     slip["items"][1] |= {"qty": 1, "unit": "PR"}
+    slip["items"][0]["qty"] = 4  # rules v2: the clerk confirms the model-read quantity against the paper
     report = client.post("/api/validate", json={"slip": slip}).json()
     assert report["status"] == "READY", report["issues"]
 
@@ -129,7 +130,7 @@ def test_shift_log_counts_holds_reviews_and_caught(client):
     assert counts["on_hold"] == 2
     assert counts["needs_review"] == 1  # hard case has an illegible name
     assert counts["ready_unposted"] == 1
-    assert counts["caught"] == 5  # 4 on the hard case + 1 mismatch
+    assert counts["caught"] == 6  # 4 on the hard case + its quantity confirmation (rules v2) + 1 mismatch
 
 
 def test_answers_are_kept_with_the_posting(client):

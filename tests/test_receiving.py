@@ -119,7 +119,7 @@ def test_non_receipt_input_is_rejected(ref):
     ("R10.pdf", "BLOCKED", {"UNKNOWN_PO"}),
     ("R11.pdf", "BLOCKED", {"MISSING_RECEIVED_BY"}),
     ("R12.pdf", "BLOCKED", {"UNORDERED_ITEM"}),
-    ("R13.png", "READY", set()),
+    ("R13.png", "BLOCKED", {"BLIND_COUNT"}),  # read from an image: the goods must be counted
 ])
 def test_each_sample_shows_what_it_was_made_to_show(ref, name, status, expected):
     r = check(name, ref)
@@ -316,3 +316,31 @@ def test_same_content_under_a_new_receipt_number_is_a_possible_duplicate(client)
     assert iss.severity == "block" and "R-20102" in iss.message
     confirmed = validate_receipt(apply_fix(single, iss, iss.fixes[0]), ref2, TODAY)
     assert "POSSIBLE_DUPLICATE" not in codes(confirmed) and "SEPARATE_DELIVERY" in codes(confirmed)
+
+
+
+# ------------------------------------------------------------ blind count for quantities read from an image
+
+
+def test_an_image_read_quantity_needs_a_count_and_a_matching_count_receives(ref):
+    reading = read_receipt(RECEIPTS / "R13.png")
+    r = validate_receipt(reading, ref, TODAY)
+    i = issue(r, "BLIND_COUNT")
+    assert i.severity == "block" and i.key == "counted" and not i.fixes  # typed, not picked
+    qty = reading["items"][0]["qty"]["value"]
+    reading["items"][0]["counted"] = qty
+    after = validate_receipt(reading, ref, TODAY)
+    assert "BLIND_COUNT" not in codes(after) and "COUNT_MATCHES" in codes(after)
+
+
+def test_a_count_that_disagrees_blocks_and_offers_the_count(ref):
+    reading = read_receipt(RECEIPTS / "R13.png")
+    reading["items"][0]["counted"] = "1"
+    r = validate_receipt(reading, ref, TODAY)
+    i = issue(r, "COUNT_MISMATCH")
+    fixed = validate_receipt(apply_fix(reading, i, i.fixes[0]), ref, TODAY)
+    assert "COUNT_MISMATCH" not in codes(fixed) and "BLIND_COUNT" not in codes(fixed)
+
+
+def test_pdf_quantities_need_no_count(ref):
+    assert {"BLIND_COUNT"} & codes(check("R01.pdf", ref)) == set()

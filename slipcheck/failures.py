@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from collections import Counter
 from difflib import SequenceMatcher
 
@@ -21,7 +22,19 @@ SPLITS = {
     "heldout_corrected": ("Held-out, corrected", ["results_heldout_corrected.json"]),
     "heldout_locked": ("Held-out, locked", ["results_heldout_rescored.json", "results_heldout.json"]),
     "dev": ("Development", ["results_dev.json"]),
+    "dev_v2": ("Development, rules v2", ["results_dev_v2.json"]),
+    "heldout_corrected_v2": ("Held-out corrected, rules v2", ["results_heldout_corrected_v2.json"]),
 }
+# What a reader must know before trusting a view.
+NOTES = {
+    "heldout_locked": "Includes two photos saved under each other's names (H02/H03): their 'misreads' are each "
+                      "other's answers. The corrected view fixes only that.",
+    "dev_v2": "Rules v2 were written after this development set was used; it is where they were checked.",
+    "heldout_corrected_v2": "Not a held-out result: rules v2 were written after these slips were seen (they fix "
+                            "gaps the adversarial suite found). It shows what v2 changes on the same readings; "
+                            "a new held-out set is needed to measure v2.",
+}
+RULESET = {"dev_v2": "v2", "heldout_corrected_v2": "v2"}  # every other view is the frozen rules, v1
 LABEL = {"wo_number": "W/O number", "date": "Date", "taken_by": "Taken by", "location": "Location",
          "signature": "Signature", "part_number": "Part number", "part_name": "Description", "qty": "Quantity",
          "unit": "Unit"}
@@ -104,15 +117,22 @@ def analyze(split: str = "heldout_corrected") -> dict:
                                      "when no part number" if name == "part_name" else "no"})
     by_field.sort(key=lambda r: (-r["wrong"], r["label"]))
 
-    # 2. false positives: correct reads that still made someone stop
-    fp = [{"field": n, "label": LABEL[n], "reviews": sum(f["review"] for f in correct if f["name"] == n),
-           "rule_flags": sum(f["new_flag"] and not f["review"] for f in correct if f["name"] == n)}
-          for n in LABEL]
-    fp = sorted((r for r in fp if r["reviews"] or r["rule_flags"]), key=lambda r: (-(r["reviews"] + r["rule_flags"]), r["label"]))
+    # 2. false positives: correct reads that were flagged anyway. Reviews and blocks stop posting until a
+    #    person answers; warnings are shown but don't stop anything, so they are counted apart.
+    def flagged(n: str) -> dict:
+        ff = [f for f in correct if f["name"] == n]
+        return {"field": n, "label": LABEL[n],
+                "reviews": sum(f["review"] for f in ff),
+                "rule_blocks": sum(bool(f.get("new_block")) and not f["review"] for f in ff),
+                "rule_warnings": sum(f["new_flag"] and not f.get("new_block") and not f["review"] for f in ff)}
+    fp = [flagged(n) for n in LABEL]
+    fp = sorted((r for r in fp if r["reviews"] or r["rule_blocks"] or r["rule_warnings"]),
+                key=lambda r: (-(r["reviews"] + r["rule_blocks"]), -r["rule_warnings"], r["label"]))
+    fp_totals = {k: sum(r[k] for r in fp) for k in ("reviews", "rule_blocks", "rule_warnings")}
 
     # 3. misses: every wrong value that would be posted, and every wrong value nothing was raised about
     def row(f: dict) -> dict:
-        return {"slip": f["slip_id"], "style": f["style"], "condition": f["condition"],
+        return {"slip": f["slip_id"], "style": f["style"], "condition": f["condition"], "name": f["name"],
                 "field": LABEL.get(f["name"], f["name"]), "line": f["line"], "paper": f["truth"], "read": f["read"],
                 "confidence": f["confidence"], "critical": f["critical"], "fate": _fate(f),
                 "kind": error_kind(f["truth"], f["read"]), "posted": f in posted}
@@ -175,19 +195,23 @@ def analyze(split: str = "heldout_corrected") -> dict:
 
     return {
         "split": split, "title": SPLITS[split][0], "source": source, "commit": report.get("commit"),
+        "ruleset": RULESET.get(split, "v1"), "note": NOTES.get(split),
         "strict_known": strict_known,
-        "splits": [{"key": k, "title": t} for k, (t, _) in SPLITS.items()],
+        "splits": [{"key": k, "title": t} for k, (t, names) in SPLITS.items()
+                   if any((EVAL_DIR / n).exists() for n in names)],
         "tiles": {
             "slips": len(slips),
             "posting_wrong_critical": _prop(crit_slips, len(slips)),
             "posting_wrong_any": _prop(len({f["slip_id"] for f in posted}), len(slips)),
             "slips_reviewed": _prop(slips_reviewed, len(slips)),
+            "person_needed": _prop(sum(bool(s.get("person_needed")) for s in slips), len(slips)),
             "confident_wrong": {"k": len(confident_wrong),
                                 "n": sum((f["confidence"] or 0) >= 0.9 for f in fields)},
         },
         "findings": findings,
         "by_field": by_field,
         "false_positives": fp,
+        "false_positive_totals": fp_totals,
         "unnecessary_reviews": _prop(sum(f["review"] for f in correct), len(correct)),
         "misses": misses,
         "miss_kinds": [{"kind": k, "count": n} for k, n in kinds.most_common()],
@@ -197,3 +221,47 @@ def analyze(split: str = "heldout_corrected") -> dict:
         "by_style": styles,
         "by_condition": group("condition", CONDITION),
     }
+
+
+# ---------------------------------------------------------------- drill-down to one slip
+
+
+def slip_detail(split: str, slip_id: str) -> dict:
+    """Everything needed to inspect one evaluated slip: the photo its reading came from, the cached reading
+    (with provenance), the answer key, and every scored field. Nothing is re-read."""
+    from slipcheck.eval import load_corrections, load_labels, photo_for, reading_path
+    from slipcheck.extract import add_provenance
+
+    _, report = load(split)
+    scored = next((s for s in report["slips"] if s["slip_id"] == slip_id), None)
+    if scored is None:
+        raise NoResults(f"No slip {slip_id} in {SPLITS[split][0]}.")
+    rows = {r["slip_id"]: r for r in load_labels("dev" if split.startswith("dev") else "heldout")}
+    corrections = load_corrections() if "corrected" in split else {}
+    source = rows.get(photo_for(slip_id, corrections), rows[slip_id])  # the row whose photo this reading is
+    path = reading_path(source)
+    reading = add_provenance(json.loads(path.read_text(encoding="utf-8")), Path(source["photo"]).name)
+    return {"split": split, "ruleset": RULESET.get(split, "v1"), "slip": slip_id,
+            "style": scored["style"], "condition": scored["condition"], "photo_of": source["slip_id"],
+            "photo": f"/api/eval/photo/{source['slip_id']}",
+            "swapped": source["slip_id"] != slip_id or (split == "heldout_locked" and slip_id in _swapped()),
+            "truth": {k: v for k, v in rows[slip_id].items() if k not in ("photo",)},
+            "reading": reading, "fields": scored["fields"], "outcome": scored["outcome"]}
+
+
+def _swapped() -> set[str]:
+    from slipcheck.eval import load_corrections
+
+    return {sid for sw in load_corrections().get("photo_swaps", []) for sid in sw["slips"]}
+
+
+def photo_path(slip_id: str) -> Path:
+    from slipcheck.eval import ROOT, load_labels
+
+    for split in ("dev", "heldout"):
+        for r in load_labels(split):
+            if r["slip_id"] == slip_id:
+                path = (ROOT / r["photo"]).resolve()
+                if path.is_file() and path.is_relative_to(ROOT.resolve()):
+                    return path
+    raise NoResults(f"No photo for {slip_id}.")

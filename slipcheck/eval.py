@@ -248,6 +248,7 @@ class SlipResult:
     outcome: str
     review_requested: bool
     fields: list[FieldResult] = field(default_factory=list)
+    person_needed: bool = False  # any block in the reading's report that the truth's report doesn't have
 
 
 def _pins(issue) -> set[tuple[int | None, str]]:
@@ -274,11 +275,11 @@ def _pairs(truth: dict, reading: dict):
             yield n, name, norm(t.get(name)), norm(read.value if read else None), read, critical
 
 
-def evaluate_slip(row: dict, reading: dict, ref: Reference) -> SlipResult:
+def evaluate_slip(row: dict, reading: dict, ref: Reference, ruleset: str = "v1") -> SlipResult:
     truth = truth_slip(row)
-    oracle = validate(truth, ref, TODAY)
+    oracle = validate(truth, ref, TODAY, ruleset=ruleset)
     try:
-        actual = validate(reading, ref, TODAY)
+        actual = validate(reading, ref, TODAY, ruleset=ruleset)
     except InvalidSlip:
         actual = None  # the whole slip is rejected, which a person sees; every wrong field counts as flagged
     expected = {(i.code, i.line, i.key) for i in oracle.issues}
@@ -315,10 +316,12 @@ def evaluate_slip(row: dict, reading: dict, ref: Reference) -> SlipResult:
         outcome = "misread_caught"
     else:
         outcome = "misread_noncritical_unflagged"
+    new_blocks = actual is None or any(i.severity == "block" and (i.code, i.line, i.key) not in expected
+                                       for i in actual.issues)
     return SlipResult(row["slip_id"], row["split"], row["style"], row["scenario"], row["condition"],
                       oracle.status, actual.status if actual else "REJECTED", outcome,
                       any(f.review for f in fields) or (actual is not None and any(i.code == "HUMAN_REVIEW" for i in actual.issues)),
-                      fields)
+                      fields, new_blocks)
 
 
 # ---------------------------------------------------------------- summary
@@ -381,6 +384,8 @@ def summarize(results: list[SlipResult], slips_total: int | None = None) -> dict
         },
         "unnecessary_review": prop(sum(f.review for f in correct), len(correct)),
         "review_rate": prop(sum(r.review_requested for r in results), n),
+        # stricter than review_rate: also counts quantity confirmations and other new blocks
+        "person_needed_rate": prop(sum(r.person_needed for r in results), n),
         "confidence_bins": bins,
         "by_style": by_style,
     }
@@ -416,17 +421,29 @@ class EvalRefused(RuntimeError):
 
 
 def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_frozen: bool = False,
-        rerun: bool = False, ref: Reference | None = None, corrected: bool = False, rescore: bool = False) -> dict:
+        rerun: bool = False, ref: Reference | None = None, corrected: bool = False, rescore: bool = False,
+        ruleset: str = "v1") -> dict:
     """corrected=True re-scores the CACHED readings with data/eval/corrections.json applied (no API
     calls, no lock, a separate results file). The locked results are never touched.
 
     rescore=True re-scores the locked run's cached readings as they are, to report a metric added
     after the run (no API calls, results_<split>_rescored.json). It also checks that every number
-    the locked run reported comes out the same, which holds only while rules and labels are unchanged."""
+    the locked run reported comes out the same, which holds only while rules and labels are unchanged.
+
+    ruleset="v2" scores the same cached readings with the rules written after the adversarial suite.
+    Results go to *_v2.json files. On held-out it is allowed only as a re-score, and is labelled: the
+    v2 rules were written after these slips were seen, so it is not a held-out result."""
     ref = ref or load_reference()
     commit = _git("rev-parse", "HEAD")
     dirty = bool(_git("status", "--porcelain", "--untracked-files=no"))
     corrections = load_corrections() if corrected else {}
+    if ruleset not in ("v1", "v2"):
+        raise EvalRefused(f"Unknown rule set '{ruleset}'.")
+    if ruleset == "v2" and split == "heldout" and not (rescore or corrected):
+        raise EvalRefused("Rules v2 were written after the held-out set was seen. They can be scored on it only "
+                          "as a labelled re-score (--rescore or --corrected), never as the held-out run.")
+    if ruleset == "v2":
+        live = False
     if rescore:
         if corrected:
             raise EvalRefused("Use --corrected or --rescore, not both.")
@@ -464,32 +481,37 @@ def run(split: str = "dev", live: bool = False, max_calls: int = 12, confirm_fro
         tokens["input"] += usage.get("input_tokens", 0)
         tokens["output"] += usage.get("output_tokens", 0)
         tokens["readings"] += 1
-        results.append(evaluate_slip(row, reading, ref))
+        results.append(evaluate_slip(row, reading, ref, ruleset))
 
     report = {
-        "split": split, "run_at": datetime.now().isoformat(timespec="seconds"), "commit": commit,
+        "split": split, "ruleset": ruleset, "run_at": datetime.now().isoformat(timespec="seconds"), "commit": commit,
         "uncommitted_tracked_changes": dirty, "live_calls_this_run": budget.calls,
         "tokens_across_all_readings": tokens, "missing": missing,
         "summary": summarize(results, len(rows)), "misreads": misread_log(results),
         "slips": [asdict(r) | {"fields": [asdict(f) for f in r.fields]} for r in results],
     }
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    v = "" if ruleset == "v1" else f"_{ruleset}"
+    if ruleset != "v1" and split == "heldout":
+        report["ruleset_note"] = ("Rules v2 were written after these held-out slips were seen (they fix gaps the "
+                                  "adversarial suite found). This is not a held-out measurement of v2; a new held-out "
+                                  "set is needed for that.")
     if rescore:
         locked_path = EVAL_DIR / f"results_{split}.json"
         locked = json.loads(locked_path.read_text(encoding="utf-8"))["summary"] if locked_path.exists() else None
         report["split"] = f"{split} (re-scored from the cached readings)"
-        report["locked_summary_reproduced"] = (None if locked is None else
-                                               {k: report["summary"].get(k) == v for k, v in locked.items()})
-        (EVAL_DIR / f"results_{split}_rescored.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        report["locked_summary_reproduced"] = (None if locked is None or ruleset != "v1" else
+                                               {k: report["summary"].get(k) == val for k, val in locked.items()})
+        (EVAL_DIR / f"results_{split}_rescored{v}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         return report
     if corrected:
         report["split"] = f"{split} (corrected: see {CORRECTIONS.name})"
         report["corrections"] = corrections
         report["locked_run"] = json.loads(LOCK.read_text(encoding="utf-8")) if LOCK.exists() else None
-        (EVAL_DIR / f"results_{split}_corrected.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        (EVAL_DIR / f"results_{split}_corrected{v}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         return report
-    (EVAL_DIR / f"results_{split}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    if split == "heldout" and not rerun:
+    (EVAL_DIR / f"results_{split}{v}.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    if split == "heldout" and not rerun and ruleset == "v1":
         LOCK.write_text(json.dumps({"commit": commit, "run_at": report["run_at"], "slips": len(results)}, indent=2) + "\n",
                         encoding="utf-8")
     return report

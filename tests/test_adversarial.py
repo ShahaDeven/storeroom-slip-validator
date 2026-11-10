@@ -3,7 +3,7 @@ from slipcheck import ledger
 
 # The cases that document failures we know about. If one of these starts passing, the fix is
 # real: move it out of this set and drop its known_gap text. If a new one appears, it's a regression.
-KNOWN_GAPS = {"A7", "S2", "S3", "S4"}
+KNOWN_GAPS = {"A11"}  # A7, S2, S3 and S4 were gaps under rules v1; fixed in v2
 
 
 def test_every_case_behaves_as_recorded():

@@ -405,9 +405,11 @@ function Question({ issue, active, onPick, onAnswer }: {
       )}
       {typed && (
         <form className="mt-2 flex gap-1.5" onSubmit={(e) => { e.preventDefault(); if (text.trim()) onAnswer(issue, { [issue.key!]: text.trim() }, text.trim()) }}>
-          <label className="sr-only" htmlFor={`rcv-${issue.code}`}>Value for {issue.where}</label>
-          <input id={`rcv-${issue.code}`} value={text} onChange={(e) => setText(e.target.value)}
-            placeholder={issue.code === 'MISSING_RECEIVED_BY' ? 'Name of the person receiving' : 'Correct value'}
+          <label className="sr-only" htmlFor={`rcv-${issue.code}-${issue.where}`}>Value for {issue.where}</label>
+          <input id={`rcv-${issue.code}-${issue.where}`} value={text} onChange={(e) => setText(e.target.value)}
+            inputMode={issue.code === 'BLIND_COUNT' || issue.code === 'BAD_COUNT' ? 'numeric' : undefined}
+            placeholder={issue.code === 'MISSING_RECEIVED_BY' ? 'Name of the person receiving'
+              : issue.code === 'BLIND_COUNT' || issue.code === 'BAD_COUNT' ? 'How many you counted' : 'Correct value'}
             className="min-w-0 flex-1 rounded border border-graphite/25 bg-white px-2 py-1 text-sm" />
           <button type="submit" className="cursor-pointer rounded bg-graphite px-3 py-1 text-sm font-medium text-steel-3 hover:bg-graphite-2">Confirm</button>
         </form>

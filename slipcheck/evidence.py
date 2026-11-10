@@ -28,7 +28,9 @@ RULES: dict[str, tuple[str, str]] = {
     "MISSING_WO": ("Every pull is charged to a work order; a slip without one can't post.", "work orders"),
     "UNKNOWN_WO": ("The W/O number must exist in the work-order system.", "work orders"),
     "CLOSED_WO": ("Parts can't be recorded against a closed work order.", "work orders"),
-    "NOT_ON_CREW": ("The person who took the parts should be on the crew that owns the work order.", "work orders"),
+    "NOT_ON_CREW": ("The person who took the parts must be on the crew that owns the work order, or a person "
+                    "confirms they are helping on it (rules v2; a warning in v1).", "work orders"),
+    "CREW_CONFIRMED": ("Someone from another crew, confirmed by a person as working on this job.", "work orders"),
     "LOCATION_MISMATCH": ("The building on the slip should match the work order's location.", "work orders"),
     "LOCATION_FROM_WO": ("No building written, so the work order's location is used.", "work orders"),
     "BEFORE_WO_OPENED": ("A slip can't be dated before its work order was opened.", "work orders"),
@@ -62,6 +64,9 @@ RULES: dict[str, tuple[str, str]] = {
     "EXCEEDS_ON_HAND": ("A pull can't be larger than the stock the system shows: the slip or the count is wrong.",
                         "inventory on hand"),
     "UNUSUAL_QTY": ("A pull above the usual maximum for that part is flagged.", "parts catalog (max per pull)"),
+    "CONFIRM_QTY": ("A quantity read by the model is confirmed by a person against the paper before posting: a "
+                    "plausible misread passes every other rule, however confident the model is (rules v2).",
+                    "the paper slip (a person)"),
     # both
     "HUMAN_REVIEW": (f"A field read with confidence below {REVIEW_THRESHOLD:.2f} is never trusted: a person "
                      "checks the paper. Illegible is not the same as blank.", "the reading's own confidence"),
@@ -86,6 +91,12 @@ RULES: dict[str, tuple[str, str]] = {
     "DUPLICATE_LINE": ("The same part on two receipt lines is added together, and shown.", "the receipt itself"),
     "LINE_RETURNED": ("A line marked for return is left out of the receipt.", "the clerk's decision"),
     "LINE_HELD": ("A line held for the buyer is left out of the receipt.", "the clerk's decision"),
+    "BLIND_COUNT": ("A quantity read from an image is received only after a person counts the goods.",
+                    "the delivered goods (a count)"),
+    "BAD_COUNT": ("A count must be a whole number.", "the delivered goods (a count)"),
+    "COUNT_MISMATCH": ("A count that differs from the reading stops the receipt: receive what was counted, or recount.",
+                       "the delivered goods (a count)"),
+    "COUNT_MATCHES": ("The count agreed with the reading.", "the delivered goods (a count)"),
 }
 OUTCOME = {BLOCK: "Blocks posting until a person answers.", WARN: "Warning only: shown, and the entry can still post.",
            INFO: "Information: done automatically and recorded."}
@@ -101,7 +112,7 @@ def _rule(issue) -> dict:
 
 
 def _extracted(doc: dict, issue) -> dict | None:
-    key = issue.key
+    key = "qty" if issue.key == "counted" else issue.key  # a count is checked against the quantity read
     if not key or key in ("items",):
         return None
     if issue.line is not None:
@@ -131,11 +142,11 @@ def _part_rows(p: Part, on_hand: int | None = None) -> list[list[str]]:
 
 # ---------------------------------------------------------------- slips
 
-WO_CODES = {"MISSING_WO", "UNKNOWN_WO", "CLOSED_WO", "NOT_ON_CREW", "LOCATION_MISMATCH", "LOCATION_FROM_WO",
+WO_CODES = {"MISSING_WO", "UNKNOWN_WO", "CLOSED_WO", "NOT_ON_CREW", "CREW_CONFIRMED", "LOCATION_MISMATCH", "LOCATION_FROM_WO",
             "BEFORE_WO_OPENED"}
 PART_CODES = {"UNKNOWN_PART", "NAME_NUMBER_MISMATCH", "PART_AMBIGUOUS", "NAME_MATCHED", "NO_PART", "DUPLICATE_PART",
               "UNIT_AMBIGUOUS", "UNIT_REMAINDER", "UNIT_CONVERTED", "UNIT_ASSUMED", "UNIT_MISMATCH",
-              "EXCEEDS_ON_HAND", "UNUSUAL_QTY", "MISSING_QTY", "BAD_QTY"}
+              "EXCEEDS_ON_HAND", "UNUSUAL_QTY", "MISSING_QTY", "BAD_QTY", "CONFIRM_QTY"}
 
 
 def _slip_reference(slip: dict, report, ref: Reference, issue, today: date) -> dict | None:

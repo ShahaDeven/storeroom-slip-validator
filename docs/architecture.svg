@@ -75,7 +75,7 @@
   <path class="line" d="M300 326 V384" marker-end="url(#a)"/>
   <rect class="gate" x="40" y="384" width="520" height="50" rx="5"/>
   <text class="t" x="300" y="405" text-anchor="middle">Confidence gate</text>
-  <text class="sr" x="300" y="423" text-anchor="middle">a field read below 0.75 → HUMAN_REVIEW block, never guessed</text>
+  <text class="sr" x="300" y="423" text-anchor="middle">below 0.75 → HUMAN_REVIEW · model-read quantity → confirmed or counted</text>
   <path class="line" d="M165 434 V460" marker-end="url(#a)"/>
   <path class="line" d="M435 434 V460" marker-end="url(#a)"/>
   <rect class="box" x="40" y="460" width="250" height="58" rx="5"/>
@@ -153,7 +153,7 @@
   <text class="s" x="664" y="677">30 handwritten slips · run-once lock</text>
   <rect class="box" x="648" y="702" width="314" height="54" rx="5"/>
   <text class="t" x="664" y="724">Adversarial suite</text>
-  <text class="s" x="664" y="743">13 cases built to break it · throwaway ledger</text>
+  <text class="s" x="664" y="743">17 cases built to break it · throwaway ledger</text>
   <rect class="box" x="648" y="768" width="314" height="54" rx="5"/>
   <text class="t" x="664" y="790">Failure analysis</text>
   <text class="s" x="664" y="809">what was misread, what was stopped, what got in</text>

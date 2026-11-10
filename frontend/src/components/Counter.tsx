@@ -167,7 +167,9 @@ function Question({ issue, active, onPick, onFix, onEnter }: QuestionProps) {
   const [text, setText] = useState('')
   const isActive = sameIssue(active, issue)
   // Free entry where there is no list to pick from, or when a read was not trusted.
-  const canType = !!issue.key && (issue.code === 'HUMAN_REVIEW' || (issue.severity === 'block' && !issue.fixes.length))
+  const canType =
+    !!issue.key &&
+    (issue.code === 'HUMAN_REVIEW' || issue.code === 'CONFIRM_QTY' || (issue.severity === 'block' && !issue.fixes.length))
 
   useEffect(() => {
     if (isActive) ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
@@ -215,7 +217,9 @@ function Question({ issue, active, onPick, onFix, onEnter }: QuestionProps) {
             id={`fix-${issue.code}-${issue.where}`}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={issue.code === 'HUMAN_REVIEW' ? 'What the paper slip says' : 'Correct value'}
+            placeholder={
+              issue.code === 'HUMAN_REVIEW' ? 'What the paper slip says' : issue.code === 'CONFIRM_QTY' ? 'Or the quantity the paper shows' : 'Correct value'
+            }
             className="min-w-0 flex-1 rounded border border-graphite/25 bg-white px-2 py-1 text-sm"
           />
           <button

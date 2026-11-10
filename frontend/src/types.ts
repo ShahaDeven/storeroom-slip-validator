@@ -341,12 +341,15 @@ export interface FailureAnalysis {
   source: string
   commit: string | null
   strict_known: boolean
+  ruleset: 'v1' | 'v2'
+  note: string | null
   splits: { key: string; title: string }[]
   tiles: {
     slips: number
     posting_wrong_critical: Prop
     posting_wrong_any: Prop
     slips_reviewed: Prop
+    person_needed: Prop
     confident_wrong: { k: number; n: number }
   }
   findings: string[]
@@ -361,10 +364,12 @@ export interface FailureAnalysis {
     posted: number
     critical: 'always' | 'when no part number' | 'no'
   }[]
-  false_positives: { field: string; label: string; reviews: number; rule_flags: number }[]
+  false_positives: { field: string; label: string; reviews: number; rule_blocks: number; rule_warnings: number }[]
+  false_positive_totals: { reviews: number; rule_blocks: number; rule_warnings: number }
   unnecessary_reviews: Prop
   misses: {
     slip: string
+    name: string
     style: string
     condition: string
     field: string
@@ -414,4 +419,37 @@ export interface Evidence {
     source: (FieldSource & { model?: string; extracted_at?: string; review_status?: string }) | null
   } | null
   reference: { title: string; rows: [string, string][]; candidates: string[] } | null
+}
+
+// ------------------------------------------------------------ one evaluated slip (failure-analysis drill-down)
+
+export interface EvalField {
+  slip_id: string
+  line: number | null
+  name: string
+  truth: string
+  read: string
+  confidence: number | null
+  correct: boolean
+  critical: boolean
+  review: boolean
+  new_flag: boolean
+  new_block: boolean
+  absorbed: boolean
+  source: (FieldSource & { model?: string }) | null
+}
+
+export interface EvalSlipDetail {
+  split: string
+  ruleset: 'v1' | 'v2'
+  slip: string
+  style: string
+  condition: string
+  photo_of: string
+  photo: string
+  swapped: boolean
+  truth: Record<string, string>
+  reading: Slip
+  fields: EvalField[]
+  outcome: string
 }

@@ -27,7 +27,7 @@ from slipcheck.evidence import slip_evidence
 from slipcheck.extract import LIVE_MODEL, ExtractionError, extract
 from slipcheck.receiving.api import router as receiving_router
 from slipcheck.reference import DATA_DIR, load_reference
-from slipcheck.validate import InvalidSlip, Report, validate
+from slipcheck.validate import RULESET, RULESETS, InvalidSlip, Report, validate
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 SLIPS_DIR, PHOTOS_DIR = DATA_DIR / "slips", DATA_DIR / "photos"
@@ -41,6 +41,7 @@ ref = load_reference()
 class ValidateRequest(BaseModel):
     slip: Any
     name: str | None = None  # when set, the check is recorded in the shift log
+    ruleset: str = RULESET  # v1 only to re-show what the frozen evaluation saw
 
 
 class PostRequest(BaseModel):
@@ -49,11 +50,13 @@ class PostRequest(BaseModel):
     answers: list[str] = []
 
 
-def _check(slip: Any, with_ref: bool = False):
+def _check(slip: Any, with_ref: bool = False, ruleset: str = RULESET):
     """Validate against stock as it stands after this shift's postings."""
+    if ruleset not in RULESETS:
+        raise HTTPException(422, f"Unknown rule set '{ruleset}'.")
     stock = ledger.with_posted_stock(ref)
     try:
-        report = validate(slip, stock)
+        report = validate(slip, stock, ruleset=ruleset)
     except InvalidSlip as e:
         raise HTTPException(422, str(e))
     return (report, stock) if with_ref else report
@@ -75,7 +78,7 @@ def _sample_note(path: Path) -> str | None:
 @app.get("/api/meta")
 def meta() -> dict:
     return {"live_available": bool(os.environ.get("ANTHROPIC_API_KEY")), "model": LIVE_MODEL,
-            "parts": len(ref.parts), "work_orders": len(ref.work_orders)}
+            "parts": len(ref.parts), "work_orders": len(ref.work_orders), "ruleset": RULESET}
 
 
 @app.get("/api/samples")
@@ -118,9 +121,9 @@ def photo(name: str) -> FileResponse:
 
 @app.post("/api/validate")
 def validate_slip(req: ValidateRequest) -> dict:
-    report, stock = _check(req.slip, with_ref=True)
+    report, stock = _check(req.slip, with_ref=True, ruleset=req.ruleset)
     posting = ledger.find_posting(report)
-    if req.name and not posting:
+    if req.name and not posting and req.ruleset == RULESET:
         ledger.record_check(req.name, report)
     # evidence[i] explains report.issues[i]: what was read, the record it was checked against, the rule
     return report.to_dict() | {"posted": posting, "evidence": slip_evidence(req.slip, report, stock)}
@@ -212,6 +215,27 @@ def eval_failures(split: str = "heldout_corrected") -> dict:
 
     try:
         return analyze(split)
+    except NoResults as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/eval/slip")
+def eval_slip(split: str, slip: str) -> dict:
+    """One evaluated slip, for the failure-analysis drill-down: photo, cached reading, answer key, scored fields."""
+    from slipcheck.failures import NoResults, slip_detail
+
+    try:
+        return slip_detail(split, slip)
+    except NoResults as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/eval/photo/{slip_id}")
+def eval_photo(slip_id: str) -> FileResponse:
+    from slipcheck.failures import NoResults, photo_path
+
+    try:
+        return FileResponse(photo_path(slip_id))
     except NoResults as e:
         raise HTTPException(404, str(e))
 

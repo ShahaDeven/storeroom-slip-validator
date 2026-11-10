@@ -36,6 +36,9 @@ What this shows, and what it doesn't:
   or punctuation, like "h.santos"), two dates that lost a digit, two locations.
 - **The cost is review load, and it is high.** 75% of held-out slips needed a person. This is
   not a time-saving result; workflow time has [not been measured](#not-measured-yet).
+- **Rules v2 close the three gaps the adversarial suite found** (another crew's work order, a size that
+  contradicts the part number, a confident quantity misread) at the cost of a person on every
+  photographed slip. See [Rules v2](#rules-v2-the-gaps-the-adversarial-suite-found-closed).
 - **One writer.** Four deliberate styles by one person is not handwriting variation across people.
   See [what was and wasn't tested](#what-was-tested-and-what-wasnt).
 
@@ -200,16 +203,47 @@ hand on real paper.
 
 ## What the architecture guarantees, and what it doesn't
 
+With the rules the app runs now (v2, below):
+
 | | Guaranteed by the code | Not guaranteed |
 |---|---|---|
 | Low-confidence read | becomes a block (`HUMAN_REVIEW`); posting refuses a slip or receipt with any block (`ledger.post`, `receiving/store.post`) | that the person checking reads the paper correctly |
-| Read that a rule contradicts | blocked or warned, with the reason shown next to the field | that a clerk does not click past a warning (warnings post) |
-| Confident read that no rule contradicts | nothing | caught at all: 6 held-out fields at 0.90+ were wrong; adversarial cases A7 and S2 |
-| Same slip or receipt posted twice | refused (same content, or same receipt number) | a re-keyed receipt with a different date |
+| Confident read of a quantity | a slip quantity read by the model must be confirmed by a person (`CONFIRM_QTY`); a receipt quantity read from an image must be counted (`BLIND_COUNT`), and a different count blocks | that the person really looks or counts: it is a forcing function, not proof |
+| Confident read of anything else that no rule contradicts | nothing | caught: names, dates and places are not checked against any record (the remaining "would be posted" values) |
+| Read that would attribute the entry to the wrong record | blocks: another crew's work order, a size that contradicts the part number, the wrong vendor | a photo filed against the wrong slip, where every field agrees with itself |
+| Read that a rule questions but doesn't contradict | a warning, shown next to the field | that a clerk doesn't click past it (warnings post) |
+| Same slip or receipt posted twice | refused (same content, or same receipt number) | a re-keyed receipt with a different date (adversarial case A11) |
 
-Closing the third row needs a second source for the value (a packing list, an advance ship notice,
-a count at put-away), not a better threshold. The second row is a rules decision: making W/O
-cross-checks block instead of warn is the first change worth testing, on new development data.
+## Rules v2: the gaps the adversarial suite found, closed
+
+The frozen rules (v1, commit `86a55af`) let three kinds of wrong entry post. The adversarial suite
+showed each one, so the rules were changed. v1 is kept in the code: every number above was scored
+with it, and `--rescore` still reproduces the locked run exactly.
+
+| Gap (adversarial case) | v1 | v2 |
+|---|---|---|
+| A W/O digit misread that lands on another crew's real work order (S3, and development slip D08) | `NOT_ON_CREW` warning; posts | block: the person's own crew's open W/Os, or a recorded confirmation that they are helping |
+| A part number one digit off, where only the size differs (S4) | not caught: the words match | block: the sizes a description commits to (3/4, 1-1/2, 20x20, 20A) must fit the part |
+| A confident, plausible quantity misread (S2; A7 on receipts) | not caught, and no threshold can catch it | slips: a person confirms every model-read quantity; receipts: a blind count |
+
+Scored on the same cached readings (`--ruleset v2`):
+
+| | Development, v1 → v2 | Held-out corrected, v1 → v2 | Held-out locked, v1 → v2 |
+|---|---|---|---|
+| Slips where a wrong critical value would be posted | 1/10 → **0/10** | 0/20 → 0/20 | 2/20 → 2/20 |
+| Slips where any wrong stored value would be posted | 2/10 → 1/10 | 10/20 → 8/20 | 11/20 → 9/20 |
+| Wrong fields stopped before posting | 6/9 → 7/9 | 19/32 → 21/32 | 22/53 → 27/53 |
+| **Slips that need a person** (any block a correct reading wouldn't have, or a review) | 5/10 → **10/10** | 17/20 → **20/20** | 17/20 → 20/20 |
+
+How to read it:
+- **Only the development column measures v2.** The v2 rules were written after the held-out slips
+  had been seen, so the held-out columns show what v2 changes on those readings, not how v2
+  performs on unseen slips. That needs a new held-out set.
+- **The price is review load.** Every photographed slip now needs a person, mostly to confirm
+  quantities: of 38 blocks on correctly read held-out fields, all but one are quantity confirmations.
+- **The locked run's two remaining slips are the photo swap.** Each misfiled reading agrees with
+  itself, so no field rule can catch it; that needs a document-identity check.
+- **The wrong values left are names, dates and places,** which no rule checks against a record.
 
 ## Not measured yet
 
@@ -233,6 +267,8 @@ python -m slipcheck eval --split dev                      # development, cached 
 python -m slipcheck eval --sweep                          # review-threshold sweep, development only
 python -m slipcheck eval --split heldout --corrected      # held-out with the recorded correction, no API calls
 python -m slipcheck eval --split heldout --rescore        # the locked run re-scored: adds the stricter rows, no API calls
+python -m slipcheck eval --split dev --ruleset v2          # rules v2 on development data
+python -m slipcheck eval --split heldout --corrected --ruleset v2   # rules v2 re-score, labelled: not a held-out result
 ```
 
 Cached readings are in `data/eval/readings/` (live Claude Haiku output with token counts). The
